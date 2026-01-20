@@ -7,3 +7,4 @@ googletrans==4.0.0rc1
 numpy
 openpyxl
 Flask-Migrate
+gunicorn>=21.2.0
