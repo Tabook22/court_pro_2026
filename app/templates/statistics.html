@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}إحصائيات ومراقبة النشاط{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="bi bi-graph-up"></i> إحصائيات ومراقبة النشاط</h1>
+            <p class="text-muted">تقرير شامل لجميع الأنشطة والقضايا في النظام</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-download"></i> تصدير التقرير
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ url_for('main.export_report', format='pdf') }}">PDF</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.export_report', format='excel') }}">Excel</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('main.statistics') }}">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label">من تاريخ</label>
+                                <input type="date" class="form-control" name="start_date"
+                                    value="{{ start_date or '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">إلى تاريخ</label>
+                                <input type="date" class="form-control" name="end_date" value="{{ end_date or '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">المحكمة</label>
+                                <select class="form-select" name="court_id">
+                                    <option value="">جميع المحاكم</option>
+                                    {% for court in courts %}
+                                    <option value="{{ court.id }}" {{ 'selected' if court_id==court.id|string else ''
+                                        }}>
+                                        {{ court.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="bi bi-funnel"></i> تطبيق الفلاتر
+                                </button>
+                                <a href="{{ url_for('main.statistics') }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> إزالة
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>{{ summary.total_cases }}</h3>
+                    <p class="mb-0">إجمالي القضايا</p>
+                    <small>
+                        <i class="bi bi-arrow-up"></i> +{{ summary.new_cases_this_month }} هذا الشهر
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>{{ summary.active_cases }}</h3>
+                    <p class="mb-0">القضايا النشطة</p>
+                    <small>{{ ((summary.active_cases / summary.total_cases) * 100)|round(1) if summary.total_cases > 0
+                        else 0 }}% من الإجمالي</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>{{ summary.finished_cases }}</h3>
+                    <p class="mb-0">القضايا المنتهية</p>
+                    <small>{{ ((summary.finished_cases / summary.total_cases) * 100)|round(1) if summary.total_cases > 0
+                        else 0 }}% من الإجمالي</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>{{ summary.total_courts }}</h3>
+                    <p class="mb-0">المحاكم النشطة</p>
+                    <small>{{ summary.total_users }} مستخدم</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Case Status Distribution -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">توزيع حالات القضايا</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Monthly Trend -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">اتجاه القضايا الشهرية</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyTrendChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Court Performance -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">أداء المحاكم</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>المحكمة</th>
+                                    <th>إجمالي القضايا</th>
+                                    <th>النشطة</th>
+                                    <th>المنتهية</th>
+                                    <th>المؤجلة</th>
+                                    <th>معدل الإنجاز</th>
+                                    <th>متوسط مدة القضية</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for court_stat in court_statistics %}
+                                <tr>
+                                    <td>{{ court_stat.court_name }}</td>
+                                    <td>{{ court_stat.total_cases }}</td>
+                                    <td><span class="badge bg-success">{{ court_stat.active_cases }}</span></td>
+                                    <td><span class="badge bg-info">{{ court_stat.finished_cases }}</span></td>
+                                    <td><span class="badge bg-warning">{{ court_stat.postponed_cases }}</span></td>
+                                    <td>{{ court_stat.completion_rate }}%</td>
+                                    <td>{{ court_stat.avg_duration }} يوم</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Activity -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">نشاط المستخدمين</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>المستخدم</th>
+                                    <th>القضايا المضافة</th>
+                                    <th>آخر نشاط</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_stat in user_statistics %}
+                                <tr>
+                                    <td>{{ user_stat.username }}</td>
+                                    <td>{{ user_stat.cases_added }}</td>
+                                    <td>{{ user_stat.last_activity.strftime('%Y-%m-%d') if user_stat.last_activity else
+                                        'لا يوجد' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Recent Activities -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">الأنشطة الأخيرة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for activity in recent_activities %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>{{ activity.action }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ activity.details }}</small>
+                                </div>
+                                <small>{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Case Status Changes Timeline -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">تغييرات حالة القضايا</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChangesChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Status Distribution Chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['منعقدة الآن', 'غير نشطة', 'مؤجلة', 'منتهية'],
+                datasets: [{
+                    data: {{ status_distribution| tojson }
+        },
+            backgroundColor: [
+            '#198754', // success green
+            '#6c757d', // secondary gray
+            '#ffc107', // warning yellow
+            '#0dcaf0'  // info blue
+        ],
+            borderWidth: 2,
+            borderColor: '#fff'
+            }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+    });
+
+    // Monthly Trend Chart
+    const monthlyCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+    new Chart(monthlyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ monthly_labels| tojson }},
+        datasets: [{
+            label: 'قضايا جديدة',
+            data: {{ monthly_new_cases| tojson }},
+        borderColor: '#0d6efd',
+        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+        fill: true,
+        tension: 0.4
+            }, {
+            label: 'قضايا منتهية',
+            data: {{ monthly_finished_cases| tojson }},
+        borderColor: '#198754',
+        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+        fill: true,
+        tension: 0.4
+            }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+    });
+
+    // Status Changes Timeline
+    const changesCtx = document.getElementById('statusChangesChart').getContext('2d');
+    new Chart(changesCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ status_changes_labels| tojson }},
+        datasets: [{
+            label: 'تغييرات الحالة',
+            data: {{ status_changes_data| tojson }},
+        backgroundColor: '#ffc107',
+        borderWidth: 1
+            }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+    });
+});
+</script>
+{% endblock %}

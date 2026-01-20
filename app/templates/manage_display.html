@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة قضايا العرض{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-display"></i> إدارة قضايا العرض</h2>
+            <p class="text-muted">اختر ورتب القضايا للعرض العام</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- القضايا المتاحة -->
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">القضايا المتاحة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم القضية</th>
+                                    <th>الموضوع</th>
+                                    <th>الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for case in all_cases %}
+                                {% if case.id not in displayed_ids %}
+                                <tr>
+                                    <td>{{ case.case_number }}</td>
+                                    <td>{{ case.case_subject }}</td>
+                                    <td>
+                                        <form method="POST"
+                                            action="{{ url_for('display.add_to_display', case_id=case.id) }}"
+                                            style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="bi bi-plus-circle"></i> إضافة
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- القضايا المعروضة حالياً -->
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">القضايا المعروضة حالياً</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('display.update_display_order') }}">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px;">الترتيب</th>
+                                        <th>رقم القضية</th>
+                                        <th>الموضوع</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sortable">
+                                    {% for display_case in display_cases %}
+                                    <tr class="sortable-row" data-id="{{ display_case.case_id }}">
+                                        <td>
+                                            <input
+                                                type="number"
+                                                name="order_{{ display_case.case_id }}"
+                                                value="{{ display_case.custom_order or loop.index }}"
+                                                class="form-control form-control-sm order-input"
+                                                min="1"
+                                            >
+                                        </td>
+                                        <td>{{ display_case.case.case_number }}</td>
+                                        <td>{{ display_case.case.case_subject }}</td>
+                                        <td>
+                                            <span
+                                                class="badge {% if display_case.case.status == 'in session' %}bg-success{% else %}bg-danger{% endif %}">
+                                                {{ display_case.case.status|title }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm btn-secondary move-up">
+                                                    <i class="bi bi-arrow-up"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-secondary move-down">
+                                                    <i class="bi bi-arrow-down"></i>
+                                                </button>
+                                                <form method="POST"
+                                                    action="{{ url_for('display.remove_from_display', case_id=display_case.case_id) }}"
+                                                    style="display: inline;">
+                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> حفظ الترتيب
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- بطاقة الملخص -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <h5>إجمالي القضايا</h5>
+                            <span class="h3">{{ display_cases|length }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <h5>القضايا النشطة</h5>
+                            <span class="h3 text-success">
+                                {{ display_cases|selectattr('case.status', 'equalto', 'active')|list|length }}
+                            </span>
+                        </div>
+                        <div class="col-md-4">
+                            <h5>القضايا غير النشطة</h5>
+                            <span class="h3 text-danger">
+                                {{ display_cases|selectattr('case.status', 'equalto', 'inactive')|list|length }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tbody = document.getElementById('sortable');
+
+        // التعامل مع أزرار التحريك للأعلى/للأسفل
+        tbody.addEventListener('click', function (e) {
+            if (e.target.closest('.move-up')) {
+                const row = e.target.closest('tr');
+                const prevRow = row.previousElementSibling;
+                if (prevRow) {
+                    tbody.insertBefore(row, prevRow);
+                    updateOrderNumbers();
+                }
+            } else if (e.target.closest('.move-down')) {
+                const row = e.target.closest('tr');
+                const nextRow = row.nextElementSibling;
+                if (nextRow) {
+                    tbody.insertBefore(nextRow, row);
+                    updateOrderNumbers();
+                }
+            }
+        });
+
+        // التعامل مع إدخال الترتيب يدويًا
+        tbody.addEventListener('change', function (e) {
+            if (e.target.classList.contains('order-input')) {
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const currentRow = e.target.closest('tr');
+                const newOrder = parseInt(e.target.value);
+                const oldOrder = rows.indexOf(currentRow) + 1;
+
+                if (newOrder !== oldOrder && newOrder > 0 && newOrder <= rows.length) {
+                    const targetRow = rows[newOrder - 1];
+                    if (newOrder < oldOrder) {
+                        tbody.insertBefore(currentRow, targetRow);
+                    } else {
+                        tbody.insertBefore(currentRow, targetRow.nextSibling);
+                    }
+                    updateOrderNumbers();
+                } else {
+                    e.target.value = oldOrder;
+                }
+            }
+        });
+
+        function updateOrderNumbers() {
+            const inputs = tbody.querySelectorAll('.order-input');
+            inputs.forEach((input, index) => {
+                input.value = index + 1;
+            });
+        }
+    });
+</script>
+{% endblock %}

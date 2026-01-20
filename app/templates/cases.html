@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة القضايا{% endblock %} {# RTL Title #}
+
+{% block extra_css %}
+<style>
+    /* --- Styles from previous version --- */
+    .bulk-delete-container {
+        margin-bottom: 1rem;
+        text-align: left;
+    }
+
+    /* RTL: Align left */
+    th.checkbox-cell,
+    td.checkbox-cell {
+        width: 1%;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    td {
+        vertical-align: middle;
+    }
+
+    /* --- NEW Styles for Custom Status Dropdown --- */
+    .status-badge-cell {
+        text-align: center;
+        /* Center badge within cell */
+    }
+
+    /* Main status badge */
+    .status-badge {
+        padding: 0.4em 0.8em;
+        font-size: 0.9rem;
+        font-weight: 500;
+        min-width: 90px;
+        text-align: center;
+    }
+
+    /* Specific status colors (ensure these match general.html if desired) */
+    .status-in_session {
+        background-color: #198754;
+        color: white;
+    }
+
+    .status-active {
+        background-color: #0dcaf0;
+        color: white;
+    }
+
+    .status-inactive {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .status-finished {
+        background-color: #adb5bd;
+        color: #343a40;
+    }
+
+    .status-postponed {
+        background-color: #ffc107;
+        color: #343a40;
+    }
+
+    /* Status change trigger button */
+    .status-trigger-btn {
+        padding: 0.1rem 0.3rem;
+        font-size: 0.8rem;
+        line-height: 1;
+        margin-right: 5px;
+        /* RTL: Space between badge and button */
+        vertical-align: middle;
+        /* Align with badge text */
+    }
+
+    /* Custom list for status options */
+    .status-change-list-container {
+        position: relative;
+        /* Container for absolute positioning */
+        display: inline-block;
+        /* Keep elements together */
+    }
+
+    .status-change-list {
+        position: absolute;
+        top: 100%;
+        /* Position below the trigger */
+        left: 0;
+        /* Align left edge (adjust if needed) */
+        /* --- RTL: Change 'left' to 'right' if alignment issue --- */
+        /* right: 0; */
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-radius: 0.25rem;
+        padding: 0.5rem 0;
+        margin-top: 0.2rem;
+        min-width: 150px;
+        /* Set a minimum width */
+        z-index: 1000;
+        /* Ensure it appears above table rows */
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        display: none;
+        /* Hidden by default */
+    }
+
+    .status-change-list.show {
+        display: block;
+        /* Show when active */
+    }
+
+    .status-change-list a {
+        display: block;
+        padding: 0.35rem 1rem;
+        color: #212529;
+        text-decoration: none;
+        font-size: 0.9rem;
+        text-align: right;
+        /* RTL text alignment */
+    }
+
+    .status-change-list a:hover {
+        background-color: #e9ecef;
+        color: #000;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-folder-fill ms-2"></i> إدارة كل القضايا</h2>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <!-- Quick filter buttons -->
+                <div class="btn-group mb-2" role="group" aria-label="Quick filters">
+                    <a href="{{ url_for('cases.list_cases', sort_by='all') }}"
+                        class="btn {% if request.args.get('sort_by', 'all') == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        جميع القضايا
+                    </a>
+                    <a href="{{ url_for('cases.list_cases', sort_by='day') }}"
+                        class="btn {% if request.args.get('sort_by') == 'day' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        اليوم
+                    </a>
+                    <a href="{{ url_for('cases.list_cases', sort_by='week') }}"
+                        class="btn {% if request.args.get('sort_by') == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        هذا الأسبوع
+                    </a>
+                    <a href="{{ url_for('cases.list_cases', sort_by='month') }}"
+                        class="btn {% if request.args.get('sort_by') == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        هذا الشهر
+                    </a>
+                </div>
+
+                <!-- Advanced filters -->
+                <form class="d-flex gap-2" method="GET" action="{{ url_for('cases.list_cases') }}">
+                    <div class="input-group">
+                        <input type="date" name="date" class="form-control" value="{{ request.args.get('date', '') }}"
+                            placeholder="تاريخ محدد">
+                        <button type="submit" class="btn btn-outline-primary">فلترة باليوم</button>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="month" name="month" class="form-control"
+                            value="{{ request.args.get('month', '') }}" placeholder="شهر محدد">
+                        <button type="submit" class="btn btn-outline-primary">فلترة بالشهر</button>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="number" name="year" class="form-control" value="{{ request.args.get('year', '') }}"
+                            placeholder="سنة محددة" min="2000" max="2100">
+                        <button type="submit" class="btn btn-outline-primary">فلترة بالسنة</button>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" name="case_number" class="form-control"
+                            value="{{ request.args.get('case_number', '') }}" placeholder="رقم الدعوى">
+                        <button type="submit" class="btn btn-outline-primary">بحث برقم الدعوى</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('cases.add_case') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle ms-1"></i> إضافة قضية جديدة
+        </a>
+        {% endif %}
+    </div>
+
+    <form id="bulk-delete-form" method="POST" action="{{ url_for('cases.delete_selected_cases') }}">
+        {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+        <div class="bulk-delete-container" style="text-align: right;">
+            <button type="submit" id="delete-selected-btn" class="btn btn-danger" disabled>
+                <i class="bi bi-trash-fill ms-1"></i> حذف المحدد
+            </button>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="checkbox-cell">
+                                    <input class="form-check-input" type="checkbox" id="select-all-checkbox"
+                                        title="تحديد/إلغاء تحديد الكل"
+                                        style="background-color:#f0f0f0; border:1px solid rgb(247, 180, 104)">
+                                </th>
+                                <th>رقم القضية</th>
+                                <th>الجلسة القادمة</th>
+                                <th>الموضوع</th>
+                                <th>المستأنف</th>
+                                <th>المستأنف ضده</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for case in cases %}
+                            <tr>
+                                <td class="checkbox-cell">
+                                    <input class="form-check-input case-checkbox" type="checkbox"
+                                        name="selected_case_ids" value="{{ case.id }}"
+                                        style="background-color:#f0f0f0; border:1px solid rgb(247, 180, 104)">
+                                </td>
+                                <td>{{ case.case_number }}</td>
+                                <td>{{ case.next_session_date if case.next_session_date else '-'}}</td>
+                                <td>{{ case.case_subject | default('-', true) | truncate(40) }}</td>
+                                <td>{{ case.plaintiff | default('-', true) }}</td>
+                                <td>{{ case.defendant | default('-', true) }}</td>
+
+                                {# --- MODIFIED Status Cell --- #}
+                                <td class="status-badge-cell">
+                                    {# Container to keep badge and list positioned relatively #}
+                                    <div class="status-change-list-container">
+                                        {# Display current status badge #}
+                                        {% set current_status = case.status.value %}
+                                        {% set status_text = 'غير معروف' %} {# Default Arabic text #}
+                                        {% if current_status == 'active' %}{% set status_text = 'الجلسة التالية' %}
+                                        {% elif current_status == 'inactive' %}{% set status_text = 'لم تبدأ بعد' %}
+                                        {% elif current_status == 'finished' %}{% set status_text = 'إنتهت' %}
+                                        {% elif current_status == 'postponed' %}{% set status_text = 'مؤجلة' %}
+                                        {% elif current_status == 'in session' %}{% set status_text = 'منعقدة الآن' %}
+                                        {% endif %}
+                                        {% set status_class = "status-" + (current_status|replace(' ', '_')) %}
+                                        <span class="badge rounded-pill status-badge {{ status_class }}">{{ status_text
+                                            }}</span>
+
+                                        {# Trigger button for the custom list #}
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-secondary status-trigger-btn"
+                                            data-list-target="status-list-{{ case.id }}" title="تغيير الحالة">
+                                            <i class="bi bi-caret-down-fill"></i> {# Simple dropdown arrow #}
+                                        </button>
+
+                                        {# The hidden list of status options #}
+                                        <div class="status-change-list list-unstyled shadow-sm border rounded p-1"
+                                            id="status-list-{{ case.id }}" style="font-size: 0.8rem;">
+                                            {# Loop through status options, excluding the current one #}
+                                            {% for status_opt in status_options or [] %} {# Pass status_options from
+                                            Flask #}
+                                            {% if status_opt.value != current_status %}
+                                            <a
+                                                href="{{ url_for('cases.change_status', case_id=case.id, status=status_opt.value) }}">
+                                                {# Arabic text for options #}
+                                                {% if status_opt.value == 'active' %} الجلسة التالية
+                                                {% elif status_opt.value == 'inactive' %} لم تبدأ بعد
+                                                {% elif status_opt.value == 'finished' %} إنتهت
+                                                {% elif status_opt.value == 'postponed' %} مؤجلة
+                                                {% elif status_opt.value == 'in session' %} منعقدة الآن
+                                                {% else %}{{ status_opt.value|title }}
+                                                {% endif %}
+                                            </a>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div> {# End status-change-list-container #}
+                                </td>
+                                {# --- End MODIFIED Status Cell --- #}
+
+                                <td> {# Actions Cell (Edit and Single Delete) #}
+                                    <div class="btn-group" role="group" aria-label="Case Actions">
+                                        <a href="{{ url_for('cases.edit_case', case_id=case.id) }}"
+                                            class="btn btn-sm btn-outline-primary" title="تعديل القضية">
+                                            <i class="bi bi-pencil-square"></i> تعديل
+                                        </a>
+                                        {% if current_user.is_admin %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="confirmSingleDelete({{ case.id }}, '{{ case.case_number }}')"
+                                            title="حذف هذه القضية">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">لا توجد قضايا لعرضها.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </form> {# End bulk delete form #}
+
+</div> {# End container #}
+
+<div class="modal fade" id="deleteSingleModal" tabindex="-1" aria-labelledby="deleteSingleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteSingleModalLabel">تأكيد الحذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد أنك تريد حذف القضية رقم <strong id="deleteSingleCaseNumber"></strong>؟ لا يمكن التراجع عن
+                هذا الإجراء.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteSingleForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">حذف القضية</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteBulkModal" tabindex="-1" aria-labelledby="deleteBulkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteBulkModalLabel">تأكيد الحذف الجماعي</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد أنك تريد حذف <strong id="deleteBulkCount"></strong> قضية محددة؟ لا يمكن التراجع عن هذا
+                الإجراء.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" id="confirm-bulk-delete-btn" class="btn btn-danger">نعم, حذف المحدد</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const caseCheckboxes = document.querySelectorAll('.case-checkbox');
+        const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+        const bulkDeleteForm = document.getElementById('bulk-delete-form');
+
+        // --- Bulk Delete Elements & Modal ---
+        let bulkDeleteModal = null;
+        const bulkModalElement = document.getElementById('deleteBulkModal');
+        if (bulkModalElement) { bulkDeleteModal = new bootstrap.Modal(bulkModalElement); }
+        const confirmBulkDeleteBtn = document.getElementById('confirm-bulk-delete-btn');
+        const deleteBulkCountSpan = document.getElementById('deleteBulkCount');
+
+        // --- Single Delete Elements & Modal ---
+        // (Keep existing single delete JS from previous version)
+        let singleDeleteModal = null;
+        const singleModalElement = document.getElementById('deleteSingleModal');
+        if (singleModalElement) { singleDeleteModal = new bootstrap.Modal(singleModalElement); }
+        const deleteSingleForm = document.getElementById('deleteSingleForm');
+        const deleteSingleCaseNumberSpan = document.getElementById('deleteSingleCaseNumber');
+
+
+        function updateDeleteButtonState() {
+            const checkedCheckboxes = document.querySelectorAll('.case-checkbox:checked');
+            if (deleteSelectedBtn) { deleteSelectedBtn.disabled = checkedCheckboxes.length === 0; }
+        }
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function () {
+                caseCheckboxes.forEach(checkbox => { checkbox.checked = selectAllCheckbox.checked; });
+                updateDeleteButtonState();
+            });
+        }
+
+        caseCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                if (!checkbox.checked && selectAllCheckbox) { selectAllCheckbox.checked = false; }
+                else if (document.querySelectorAll('.case-checkbox:checked').length === caseCheckboxes.length && selectAllCheckbox) { selectAllCheckbox.checked = true; }
+                updateDeleteButtonState();
+            });
+        });
+
+        if (bulkDeleteForm) {
+            bulkDeleteForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                const selectedCount = document.querySelectorAll('.case-checkbox:checked').length;
+                if (selectedCount === 0) { alert('الرجاء تحديد قضية واحدة على الأقل للحذف.'); return; }
+                if (bulkDeleteModal && deleteBulkCountSpan) {
+                    deleteBulkCountSpan.textContent = selectedCount;
+                    bulkDeleteModal.show();
+                } else { if (confirm(`هل أنت متأكد أنك تريد حذف ${selectedCount} قضية محددة؟`)) { this.submit(); } }
+            });
+        }
+
+        if (confirmBulkDeleteBtn) {
+            confirmBulkDeleteBtn.addEventListener('click', function () {
+                if (bulkDeleteForm) { bulkDeleteForm.submit(); }
+            });
+        }
+
+        // --- NEW: JavaScript for Custom Status List Toggle ---
+        const tableBody = document.querySelector('#bulk-delete-form table tbody');
+        if (tableBody) {
+            tableBody.addEventListener('click', function (event) {
+                const triggerButton = event.target.closest('.status-trigger-btn');
+                if (triggerButton) {
+                    event.stopPropagation(); // Prevent triggering other click listeners if any
+                    const targetListId = triggerButton.getAttribute('data-list-target');
+                    const statusList = document.getElementById(targetListId);
+
+                    if (statusList) {
+                        // Hide all other open status lists first
+                        document.querySelectorAll('.status-change-list.show').forEach(list => {
+                            if (list.id !== targetListId) {
+                                list.classList.remove('show');
+                            }
+                        });
+                        // Toggle the clicked one
+                        statusList.classList.toggle('show');
+                    }
+                } else {
+                    // If click was not on a trigger, close any open lists
+                    if (!event.target.closest('.status-change-list')) {
+                        document.querySelectorAll('.status-change-list.show').forEach(list => {
+                            list.classList.remove('show');
+                        });
+                    }
+                }
+            });
+        } // end if(tableBody)
+
+        // Optional: Close lists if clicking outside the container anywhere
+        document.addEventListener('click', function (event) {
+            if (!event.target.closest('.status-change-list-container')) {
+                document.querySelectorAll('.status-change-list.show').forEach(list => {
+                    list.classList.remove('show');
+                });
+            }
+        });
+
+        // Initial state check
+        updateDeleteButtonState();
+
+    }); // End DOMContentLoaded
+
+    // Keep the single delete function globally accessible
+    function confirmSingleDelete(caseId, caseNumber) {
+        const singleDeleteModalInstance = bootstrap.Modal.getInstance(document.getElementById('deleteSingleModal'));
+        const deleteSingleForm = document.getElementById('deleteSingleForm');
+        const deleteSingleCaseNumberSpan = document.getElementById('deleteSingleCaseNumber');
+        if (!singleDeleteModalInstance || !deleteSingleForm || !deleteSingleCaseNumberSpan) {
+            console.error("Single delete modal elements not found.");
+            if (confirm(`هل أنت متأكد أنك تريد حذف القضية رقم "${caseNumber}"؟`)) {
+                const form = document.createElement('form'); form.method = 'POST'; form.action = "{{ url_for('cases.delete_case', case_id=0) }}".replace('0', caseId);
+                document.body.appendChild(form); form.submit();
+            }
+            return;
+        }
+        deleteSingleCaseNumberSpan.textContent = caseNumber;
+        deleteSingleForm.action = "{{ url_for('cases.delete_case', case_id=0) }}".replace('0', caseId);
+        singleDeleteModalInstance.show();
+    }
+</script>
+{% endblock %}

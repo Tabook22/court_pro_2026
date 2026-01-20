@@ -1,0 +1,234 @@
+
+{% extends "base.html" %}
+
+{% block title %}
+إعدادات العرض - نظام إدارة القضايا
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-sliders"></i> إعدادات العرض</h2>
+            <p class="text-muted">قم بتكوين الحقول التي يجب عرضها في صفحة عرض القضايا.</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">إعدادات ظهور الحقول</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">عرض</th>
+                                        <th>اسم الحقل</th>
+                                        <th>الاسم بالعربية</th>
+                                        <th>الوصف</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for field in fields %}
+                                    <tr>
+                                        <td class="text-center">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="{{ field.name }}" name="visible_fields" value="{{ field.name }}" {% if field.is_visible %}checked{% endif %}>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <label class="form-check-label" for="{{ field.name }}">
+                                                {{ field.field_name_ar }}
+                                            </label>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm" 
+                                                   name="field_name_ar_{{ field.name }}" 
+                                                   value="{{ field.field_name_ar }}" 
+                                                   placeholder="الاسم بالعربية">
+                                        </td>
+                                        <td>
+                                            {% if field.name == 'case_number' %}
+                                                معرف فريد للقضية
+                                            {% elif field.name == 'next_session_date' %}
+                                                تاريخ الجلسة القادمة
+                                            {% elif field.name == 'session_result' %}
+                                                نتيجة الجلسة السابقة
+                                            {% elif field.name == 'num_sessions' %}
+                                                إجمالي عدد الجلسات المنعقدة
+                                            {% elif field.name == 'case_subject' %}
+                                                الموضوع الرئيسي أو وصف القضية
+                                            {% elif field.name == 'defendant' %}
+                                                اسم الطرف المدعى عليه
+                                            {% elif field.name == 'plaintiff' %}
+                                                اسم الطرف المدعي
+                                            {% elif field.name == 'prosecution_number' %}
+                                                رقم مرجعي للنيابة الرسمي
+                                            {% elif field.name == 'police_department' %}
+                                                قسم الشرطة المعني
+                                            {% elif field.name == 'police_case_number' %}
+                                                الرقم المرجعي الشرطي
+                                            {% elif field.name == 'status' %}
+                                                الحالة الحالية للقضية
+                                            {% elif field.name == 'case_date' %}
+                                                تاريخ تسجيل القضية
+                                            {% elif field.name == 'added_date' %}
+                                                تاريخ إضافة القضية للنظام
+                                            {% elif field.name == 'c_order' %}
+                                                ترتيب القضية في العرض
+                                            {% else %}
+                                                معلومات الحقل
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-secondary" onclick="selectAll()">تحديد الكل</button>
+                            <button type="button" class="btn btn-secondary" onclick="deselectAll()">إلغاء تحديد الكل</button>
+                            <button type="submit" class="btn btn-primary float-end"> 
+                                <i class="bi bi-save"></i> حفظ الإعدادات 
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- بطاقة المعلومات -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">معلومات</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>الحقول المحددة ستظهر في صفحة عرض القضايا</li>
+                        <li>سيتم تطبيق التغييرات فور حفظها</li>
+                        <li>يجب تحديد حقل واحد على الأقل</li>
+                        <li>ترتيب الحقول في العرض سيطابق الترتيب المعروض هنا</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- الإعدادات السريعة -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">إعدادات سريعة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <button type="button" class="list-group-item list-group-item-action" onclick="applyPreset('basic')"> 
+                            <strong>عرض أساسي</strong> 
+                            <br> 
+                            <small class="text-muted">يعرض الحقول الأساسية فقط</small> 
+                        </button>
+
+                        <button type="button" class="list-group-item list-group-item-action" onclick="applyPreset('detailed')"> 
+                            <strong>عرض مفصل</strong> 
+                            <br> 
+                            <small class="text-muted">يعرض جميع معلومات القضية</small> 
+                        </button>
+
+                        <button type="button" class="list-group-item list-group-item-action" onclick="applyPreset('session')"> 
+                            <strong>تركيز الجلسة</strong> 
+                            <br> 
+                            <small class="text-muted">يركز على الحقول المتعلقة بالجلسات</small> 
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- بطاقة مساعدة -->
+            <div class="card mt-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">مساعدة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="helpAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                    كيف تستخدم إعدادات العرض؟
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body">
+                                    <ul class="mb-0">
+                                        <li>حدد الحقول التي تريد عرضها</li>
+                                        <li>ألغ تحديد الحقول التي لا تريد عرضها</li>
+                                        <li>استخدم الإعدادات السريعة للتكوينات الجاهزة</li>
+                                        <li>انقر على حفظ الإعدادات لتطبيق التغييرات</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            انقر على حفظ الإعدادات لتطبيق التغييرات
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// دالة لتحديد جميع مربعات الاختيار
+function selectAll() {
+    document.querySelectorAll('input[name="visible_fields"]').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+}
+
+// دالة لإلغاء تحديد جميع مربعات الاختيار
+function deselectAll() {
+    document.querySelectorAll('input[name="visible_fields"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+}
+
+// دالة لتطبيق إعدادات العرض الجاهزة
+function applyPreset(preset) {
+    const checkboxes = document.querySelectorAll('input[name="visible_fields"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false; // إلغاء التحديد للجميع أولاً
+    });
+
+    if (preset === 'basic') {
+        const basicFields = ['case_number', 'next_session_date', 'case_subject', 'status'];
+        basicFields.forEach(field => {
+            const checkbox = document.getElementById(field);
+            if (checkbox) checkbox.checked = true;
+        });
+    } else if (preset === 'detailed') {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true; // تحديد الكل لعرض مفصل
+        });
+    } else if (preset === 'session') {
+        const sessionFields = ['case_number', 'next_session_date', 'session_result', 'num_sessions', 'status'];
+        sessionFields.forEach(field => {
+            const checkbox = document.getElementById(field);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
+}
+</script>
+{% endblock %}

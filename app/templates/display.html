@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}عرض القضايا - نظام إدارة القضايا{% endblock %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h2 id="clock" class="display-4" style="font-family: 'Digital-7', monospace;"></h2>
+</div>
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-display"></i> عرض القضايا</h2>
+            <p class="text-muted">عرض القضايا النشطة بالحقول المحددة</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if cases %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            {% for field in visible_fields %}
+                            <th>{{ matching_fields[field] }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {# First show 'in session' cases #}
+                        {% for case in cases if case.status.value == 'in session' %}
+                        <tr class="table-info">
+                            {% for field in visible_fields %}
+                            <td>
+                                {% if field == 'status' %}
+                                <span class="badge bg-info">{{ case[field].value }}</span>
+                                {% elif field == 'next_session_date' %}
+                                <span class="text-primary">
+                                    <i class="bi bi-calendar"></i> {{ case[field] }}
+                                </span>
+                                {% elif field == 'case_number' %}
+                                <strong>{{ case[field] }}</strong>
+                                {% else %}
+                                {{ case[field] }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+
+                        {# Then show 'inactive' cases #}
+                        {% for case in cases if case.status.value == 'inactive' %}
+                        <tr class="table-warning">
+                            {% for field in visible_fields %}
+                            <td>
+                                {% if field == 'status' %}
+                                <span class="badge bg-warning">{{ case[field].value }}</span>
+                                {% elif field == 'next_session_date' %}
+                                <span class="text-primary">
+                                    <i class="bi bi-calendar"></i> {{ case[field] }}
+                                </span>
+                                {% elif field == 'case_number' %}
+                                <strong>{{ case[field] }}</strong>
+                                {% else %}
+                                {{ case[field] }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+
+                        {# Then show 'postponed' cases #}
+                        {% for case in cases if case.status.value == 'postponed' %}
+                        <tr class="table-secondary">
+                            {% for field in visible_fields %}
+                            <td>
+                                {% if field == 'status' %}
+                                <span class="badge bg-secondary">{{ case[field].value }}</span>
+                                {% elif field == 'next_session_date' %}
+                                <span class="text-primary">
+                                    <i class="bi bi-calendar"></i> {{ case[field] }}
+                                </span>
+                                {% elif field == 'case_number' %}
+                                <strong>{{ case[field] }}</strong>
+                                {% else %}
+                                {{ case[field] }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+
+                        {# Finally show 'finished' cases #}
+                        {% for case in cases if case.status.value == 'finished' %}
+                        <tr class="table-success">
+                            {% for field in visible_fields %}
+                            <td>
+                                {% if field == 'status' %}
+                                <span class="badge bg-success">{{ case[field].value }}</span>
+                                {% elif field == 'next_session_date' %}
+                                <span class="text-primary">
+                                    <i class="bi bi-calendar"></i> {{ case[field] }}
+                                </span>
+                                {% elif field == 'case_number' %}
+                                <strong>{{ case[field] }}</strong>
+                                {% else %}
+                                {{ case[field] }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> لم يتم العثور على قضايا نشطة.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if current_user.is_admin %}
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5><i class="bi bi-gear"></i> تكوين العرض</h5>
+                    <p class="text-muted">يتم عرض {{ visible_fields|length }} حقل(حقول) حالياً</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{{ url_for('display.display_settings') }}" class="btn btn-primary">
+                        <i class="bi bi-sliders"></i> تعديل إعدادات العرض
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- اختياري: إضافة وظيفة التصدير -->
+<div class="position-fixed bottom-0 end-0 p-3">
+    <div class="dropdown">
+        <button class="btn btn-primary rounded-circle shadow" type="button" id="exportDropdown"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-download"></i>
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+            <li><a class="dropdown-item" href="#" onclick="exportToPDF()"><i class="bi bi-file-pdf"></i> تصدير بصيغة
+                    PDF</a></li>
+            <li><a class="dropdown-item" href="#" onclick="exportToExcel()"><i class="bi bi-file-excel"></i> تصدير بصيغة
+                    Excel</a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('ar-OM', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+        document.getElementById('clock').textContent = timeString;
+    }
+
+    // Update clock every second
+    setInterval(updateClock, 1000);
+    updateClock(); // Initial call
+
+    function exportToPDF() {
+        alert('سيتم تنفيذ وظيفة التصدير بصيغة PDF لاحقاً');
+    }
+
+    function exportToExcel() {
+        alert('سيتم تنفيذ وظيفة التصدير بصيغة Excel لاحقاً');
+    }
+</script>
+{% endblock %}

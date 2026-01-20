@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}إعدادات النظام - نظام إدارة القضايا{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-gear"></i> إعدادات النظام</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- قسم إعدادات العرض -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-display"></i> إعدادات العرض</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('display.display_settings') }}">
+                        <h6 class="mb-3">اختر الحقول للعرض</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">معلومات القضية</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% for field in fields if field.name in ['case_number', 'case_subject',
+                                            'status'] %}
+                                            <div class="form-check mb-2">
+                                                <input type="checkbox" class="form-check-input" id="{{ field.name }}"
+                                                    name="visible_fields" value="{{ field.name }}" {% if
+                                                    field.is_visible %}checked{% endif %}>
+                                                <label class="form-check-label" for="{{ field.name }}">
+                                                    {{ field.name|replace('_', ' ')|title }}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">تفاصيل الجلسة</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% for field in fields if field.name in ['next_session_date',
+                                            'session_result', 'num_sessions'] %}
+                                            <div class="form-check mb-2">
+                                                <input type="checkbox" class="form-check-input" id="{{ field.name }}"
+                                                    name="visible_fields" value="{{ field.name }}" {% if
+                                                    field.is_visible %}checked{% endif %}>
+                                                <label class="form-check-label" for="{{ field.name }}">
+                                                    {{ field.name|replace('_', ' ')|title }}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">الأطراف</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% for field in fields if field.name in ['plaintiff', 'defendant'] %}
+                                            <div class="form-check mb-2">
+                                                <input type="checkbox" class="form-check-input" id="{{ field.name }}"
+                                                    name="visible_fields" value="{{ field.name }}" {% if
+                                                    field.is_visible %}checked{% endif %}>
+                                                <label class="form-check-label" for="{{ field.name }}">
+                                                    {{ field.name|replace('_', ' ')|title }}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">أرقام المراجع</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% for field in fields if field.name in ['prosecution_number',
+                                            'police_case_number', 'police_department'] %}
+                                            <div class="form-check mb-2">
+                                                <input type="checkbox" class="form-check-input" id="{{ field.name }}"
+                                                    name="visible_fields" value="{{ field.name }}" {% if
+                                                    field.is_visible %}checked{% endif %}>
+                                                <label class="form-check-label" for="{{ field.name }}">
+                                                    {{ field.name|replace('_', ' ')|title }}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-secondary" onclick="selectAll()">
+                                <i class="bi bi-check-all"></i> تحديد الكل
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="deselectAll()">
+                                <i class="bi bi-square"></i> إلغاء تحديد الكل
+                            </button>
+                            <button type="submit" class="btn btn-primary float-end">
+                                <i class="bi bi-save"></i> حفظ الإعدادات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم الإعدادات السريعة -->
+        <div class="col-lg-6 mb-4">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> إعدادات سريعة</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">قم بتطبيق التكوينات المحددة مسبقاً بنقرة واحدة.</p>
+                    <div class="list-group">
+                        <button type="button" class="list-group-item list-group-item-action"
+                            onclick="applyPreset('basic')">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">عرض أساسي</h6>
+                                <small>4 حقول</small>
+                            </div>
+                            <small class="text-muted">يعرض معلومات القضية الأساسية</small>
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action"
+                            onclick="applyPreset('detailed')">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">عرض مفصل</h6>
+                                <small>جميع الحقول</small>
+                            </div>
+                            <small class="text-muted">يعرض كافة المعلومات المتاحة</small>
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action"
+                            onclick="applyPreset('session')">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">تركيز الجلسة</h6>
+                                <small>5 حقول</small>
+                            </div>
+                            <small class="text-muted">يركز على تفاصيل الجلسة</small>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم المساعدة -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-question-circle"></i> مساعدة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="settingsHelp">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapseOne">
+                                    كيف تستخدم إعدادات العرض؟
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse show"
+                                data-bs-parent="#settingsHelp">
+                                <div class="accordion-body">
+                                    <ul class="mb-0">
+                                        <li>حدد الخانات التي تريد عرضها</li>
+                                        <li>ألغِ تحديد الخانات التي لا تريد عرضها</li>
+                                        <li>استخدم الإعدادات السريعة للتكوينات الشائعة</li>
+                                        <li>انقر على حفظ الإعدادات لتطبيق التغييرات</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapseTwo">
+                                    عن فئات الحقول
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#settingsHelp">
+                                <div class="accordion-body">
+                                    يتم تجميع الحقول إلى:
+                                    <ul class="mb-0">
+                                        <li>معلومات القضية - تفاصيل القضية الأساسية</li>
+                                        <li>تفاصيل الجلسة - معلومات متعلقة بالجلسة</li>
+                                        <li>الأطراف - معلومات المدعي والمدعى عليه</li>
+                                        <li>أرقام المراجع - أرقام تعريف القضية</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function selectAll() {
+        document.querySelectorAll('input[name="visible_fields"]').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+    }
+
+    function deselectAll() {
+        document.querySelectorAll('input[name="visible_fields"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+    }
+
+    function applyPreset(preset) {
+        const checkboxes = document.querySelectorAll('input[name="visible_fields"]');
+
+        // قم أولاً بإلغاء تحديد الكل
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+
+        // تطبيق التكوين الجاهز
+        if (preset === 'basic') {
+            const basicFields = ['case_number', 'next_session_date', 'case_subject', 'status'];
+            basicFields.forEach(field => {
+                const checkbox = document.getElementById(field);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+        else if (preset === 'detailed') {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        }
+        else if (preset === 'session') {
+            const sessionFields = ['case_number', 'next_session_date', 'session_result', 'num_sessions', 'status'];
+            sessionFields.forEach(field => {
+                const checkbox = document.getElementById(field);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+    }
+</script>
+{% endblock %}

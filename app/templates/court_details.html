@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}تفاصيل {{ court.name }} - نظام إدارة القضايا{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-building"></i> {{ court.name }}</h2>
+                    <p class="text-muted">{{ court.description or 'لا يوجد وصف' }}</p>
+                </div>
+                <div>
+                    <span class="badge {% if court.is_active %}bg-success{% else %}bg-danger{% endif %} fs-6">
+                        {{ 'نشط' if court.is_active else 'غير نشط' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('main.list_courts') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> العودة للمحاكم
+                </a>
+                <a href="{{ url_for('main.edit_court', court_id=court.id) }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> تعديل المحكمة
+                </a>
+                <a href="{{ url_for('main.court_cases', court_id=court.id) }}" class="btn btn-success">
+                    <i class="bi bi-briefcase"></i> عرض جميع القضايا
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ total_cases }}</h4>
+                    <p class="mb-0">إجمالي القضايا</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>{{ active_cases|length }}</h4>
+                    <p class="mb-0">القضايا النشطة</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4>{{ inactive_cases|length }}</h4>
+                    <p class="mb-0">القضايا غير النشطة</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>{{ display_cases|length }}</h4>
+                    <p class="mb-0">القضايا المعروضة</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users and Recent Cases -->
+    <div class="row">
+        <!-- Users Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">المستخدمين المخصصين ({{ court.users|length }})</h5>
+                    <a href="{{ url_for('auth.add_user') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-person-plus"></i> إضافة مستخدم
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if court.users %}
+                    <div class="list-group list-group-flush">
+                        {% for user in court.users %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ user.name }}</strong>
+                                <div class="text-muted small">
+                                    <i class="bi bi-person"></i> {{ user.username }}
+                                    <br>
+                                    <i class="bi bi-envelope"></i> {{ user.email }}
+                                    {% if user.tel %}
+                                    <br>
+                                    <i class="bi bi-telephone"></i> {{ user.tel }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                {% if user.is_admin %}
+                                <span class="badge bg-warning text-dark mb-1">مدير</span>
+                                <br>
+                                {% endif %}
+                                <div class="btn-group-vertical btn-group-sm">
+                                    <a href="{{ url_for('auth.edit_user', user_id=user.id) }}"
+                                        class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-pencil"></i> تعديل
+                                    </a>
+                                    <a href="{{ url_for('auth.impersonate_user', user_id=user.id) }}"
+                                        class="btn btn-outline-success btn-sm">
+                                        <i class="bi bi-person-gear"></i> تمثيل
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">لا يوجد مستخدمين مخصصين لهذه المحكمة</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Cases Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">أحدث القضايا</h5>
+                    <a href="{{ url_for('main.court_cases', court_id=court.id) }}" class="btn btn-sm btn-success">
+                        عرض الكل
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_cases %}
+                    <div class="list-group list-group-flush">
+                        {% for case in recent_cases %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ case.case_number }}</strong>
+                                    <p class="mb-1 small">{{ case.case_subject or 'لا يوجد موضوع' }}</p>
+                                    <small class="text-muted">
+                                        تاريخ الإضافة: {{ case.added_date.strftime('%Y-%m-%d') if case.added_date }}
+                                    </small>
+                                </div>
+                                <span
+                                    class="badge {% if case.status.value == 'active' %}bg-success{% elif case.status.value == 'finished' %}bg-secondary{% else %}bg-warning{% endif %}">
+                                    {{ case.status.value|title }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">لا توجد قضايا في هذه المحكمة</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

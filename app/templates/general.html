@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {# Removed meta refresh: <meta http-equiv="refresh" content="300"> #}
+    <title>جدول قضايا المحكمة</title>
+    <style>
+        /* Full viewport layout */
+        html, body {
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .main-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .clock-container {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #003366, #004080);
+            color: white;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            flex-shrink: 0;
+        }
+
+        #clock {
+            font-size: 2.5em;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #ffffff;
+            margin: 0;
+            padding: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+            display: inline-block;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            min-width: 200px;
+        }
+
+        .navbar {
+            z-index: 999;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        .fixed-header {
+            flex-shrink: 0;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            padding: 20px 0;
+        }
+
+        .scrollable-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0;
+        }
+
+        .fixed-footer {
+            flex-shrink: 0;
+            background-color: #f8f9fa;
+            border-top: 2px solid #dee2e6;
+            padding: 20px 0;
+        }
+
+        /* Enhanced scrollbar styling */
+        .scrollable-content::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        .scrollable-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 6px;
+        }
+
+        .scrollable-content::-webkit-scrollbar-thumb {
+            background: #003366;
+            border-radius: 6px;
+            border: 2px solid #f1f1f1;
+        }
+
+        .scrollable-content::-webkit-scrollbar-thumb:hover {
+            background: #004080;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ar-OM', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+            document.getElementById('clock').textContent = timeString;
+        }
+
+        // Update clock every second when the page loads
+        window.onload = function() {
+            updateClock();
+            setInterval(updateClock, 1000);
+        };
+    </script>
+</head>
+<body>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="clock-container">
+        <h2 id="clock"></h2>
+    </div>
+    <style>
+        body {
+            direction: rtl;
+            background-color: #f8f9fa; /* Lighter background */
+            font-family: 'Tahoma', 'Segoe UI', Geneva, Verdana, sans-serif; /* Common Arabic font */
+            font-size: 1.1rem; /* Slightly larger base font size */
+        }
+        .navbar-brand {
+            font-size: 1.6rem;
+            font-weight: bold;
+        }
+        .table {
+            border-collapse: separate;
+            border-spacing: 0 10px; /* Increased spacing */
+            margin-top: -10px;
+        }
+        .table th {
+            background-color: #003366; /* Darker blue */
+            color: white;
+            font-weight: 600; /* Bolder headers */
+            padding: 1rem 0.75rem; /* More padding */
+            border: none;
+            text-align: center; /* Center align headers */
+            font-size: 1.15rem;
+        }
+        .table td {
+            vertical-align: middle;
+            border: none;
+            padding: 0.9rem 0.75rem; /* Consistent padding */
+            background-color: #ffffff; /* White background for cells */
+            text-align: center; /* Center align cell content */
+        }
+        /* Ensure first and last cells have rounded corners */
+        .table tr td:first-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+        .table tr td:last-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+        .table tr th:first-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+        .table tr th:last-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+
+        .case-row {
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* Subtle shadow */
+            border-radius: 8px; /* Rounded corners for the row */
+        }
+        .case-row:hover {
+             transform: translateY(-2px);
+             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+        }
+
+        /* --- Status Styling --- */
+        .case-row[data-status="in session"] {
+            background-color: #d4edda; /* Light green background */
+            border-right: 6px solid #198754; /* Prominent green right border (RTL) */
+             border-left: none;
+        }
+        .case-row[data-status="in session"] td {
+            font-weight: 500; /* Slightly bolder text */
+            background-color: #d4edda; /* Ensure cell background matches */
+        }
+        .status-badge {
+            padding: 0.5em 0.9em;
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: inline-flex; /* Use flex for icon alignment */
+            align-items: center;
+            gap: 0.4em; /* Space between icon and text */
+            min-width: 110px; /* Ensure badges have similar width */
+            justify-content: center;
+        }
+
+        .status-in_session { background-color: #198754; color: white; } /* Bootstrap Success Green */
+        .status-active { background-color: #0dcaf0; color: white; } /* Bootstrap Info Cyan */
+        .status-inactive { background-color: #6c757d; color: white; } /* Bootstrap Secondary Gray */
+        .status-finished { background-color: #adb5bd; color: #333; } /* Lighter Gray */
+        .status-postponed { background-color: #ffc107; color: #333; } /* Bootstrap Warning Yellow */
+
+        /* Pulse animation for 'in session' icon */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .icon-in_session {
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        .timestamp {
+            font-size: 0.9rem;
+            color: #6c757d;
+            padding: 8px 12px;
+            border-radius: 4px;
+            background-color: #e9ecef; /* Light gray background */
+            display: inline-block;
+        }
+        .case-count-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            margin-top: 20px;
+        }
+        .no-print {
+             display: initial;
+        }
+        @media print {
+             .no-print { display: none; }
+             html, body { height: auto; overflow: visible; }
+             .main-layout { height: auto; display: block; }
+             .scrollable-content { overflow: visible; flex: none; }
+             .fixed-header, .fixed-footer { position: static; }
+             body { font-size: 10pt; }
+             .table th, .table td { padding: 0.5rem 0.4rem; }
+             .clock-container { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-layout">
+        {# Fixed Clock Header #}
+        <div class="clock-container">
+            <h2 id="clock"></h2>
+        </div>
+
+        {# Fixed Navigation #}
+        <nav class="navbar navbar-dark bg-primary no-print">
+            <div class="container" style="background-color: #000;">
+                <span class="navbar-brand">
+                    <i class="bi bi-briefcase"></i>جدول القضايا اليومية
+                </span>
+                <div class="d-flex">
+                    <button onclick="window.print()" class="btn btn-outline-light ms-2">
+                        <i class="bi bi-printer"></i> طباعة
+                    </button>
+                    <button onclick="window.location.reload()" class="btn btn-outline-light">
+                        <i class="bi bi-arrow-clockwise"></i> تحديث
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        {# Fixed Header Information #}
+        <div class="fixed-header">
+            <div class="container">
+                <div class="timestamp mb-3">
+                    <i class="bi bi-clock"></i> آخر تحديث: <span id="timestamp"></span>
+                </div>
+                <h1 class="text-center mb-0" style="color: #003366; font-size: 2rem;">
+                    <i class="bi bi-building"></i> {{ court.name }}
+                </h1>
+            </div>
+        </div>
+
+        {# Scrollable Cases Content #}
+        <div class="scrollable-content">
+            <div class="container">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead class="sticky-top">
+                            <tr>
+                                {% for field, arabic_name in matching_fields.items() %}
+                                <th>{{ arabic_name or field|replace('_', ' ')|title }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {# First show 'in session' cases #}
+                            {% for case in cases if case.status.value == 'in session' %}
+                            <tr class="case-row" data-status="{{ case.status.value }}">
+                                {% for field in visible_fields %}
+                                <td>
+                                    {% if field == 'case_date' or field == 'next_session_date' %}
+                                    <span class="text-nowrap">
+                                        <i class="bi bi-calendar3"></i> {{ case[field]|string|replace('-', '/') if case[field] else 'غير محدد' }}
+                                    </span>
+                                    {% elif field == 'case_number' %}
+                                    <strong style="color:#dc3545;">{{ case[field] }}</strong>
+                                    {% elif field == 'status' %}
+                                        {% set icon_class = 'bi-play-circle-fill icon-in_session' %}
+                                        {% set status_text = 'منعقدة الآن' %}
+                                        <span class="badge rounded-pill status-badge status-{{ case.status.value|replace(' ', '_') }}">
+                                            <i class="bi {{ icon_class }}"></i>
+                                            <span>{{ status_text }}</span>
+                                        </span>
+                                    {% else %}
+                                    {{ case[field] if case[field] is not none else '-' }}
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+
+                            {# Then show 'inactive' cases #}
+                            {% for case in cases if case.status.value == 'inactive' %}
+                            <tr class="case-row" data-status="{{ case.status.value }}">
+                                {% for field in visible_fields %}
+                                <td>
+                                    {% if field == 'case_date' or field == 'next_session_date' %}
+                                    <span class="text-nowrap">
+                                        <i class="bi bi-calendar3"></i> {{ case[field]|string|replace('-', '/') if case[field] else 'غير محدد' }}
+                                    </span>
+                                    {% elif field == 'case_number' %}
+                                    <strong style="color:#dc3545;">{{ case[field] }}</strong>
+                                    {% elif field == 'status' %}
+                                        {% set icon_class = 'bi-pause-circle' %}
+                                        {% set status_text = 'لم تبدأ بعد' %}
+                                        <span class="badge rounded-pill status-badge status-{{ case.status.value|replace(' ', '_') }}">
+                                            <i class="bi {{ icon_class }}"></i>
+                                            <span>{{ status_text }}</span>
+                                        </span>
+                                    {% else %}
+                                    {{ case[field] if case[field] is not none else '-' }}
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+
+                            {# Then show 'postponed' cases #}
+                            {% for case in cases if case.status.value == 'postponed' %}
+                            <tr class="case-row" data-status="{{ case.status.value }}">
+                                {% for field in visible_fields %}
+                                <td>
+                                    {% if field == 'case_date' or field == 'next_session_date' %}
+                                    <span class="text-nowrap">
+                                        <i class="bi bi-calendar3"></i> {{ case[field]|string|replace('-', '/') if case[field] else 'غير محدد' }}
+                                    </span>
+                                    {% elif field == 'case_number' %}
+                                    <strong style="color:#dc3545;">{{ case[field] }}</strong>
+                                    {% elif field == 'status' %}
+                                        {% set icon_class = 'bi-calendar-x-fill' %}
+                                        {% set status_text = 'مؤجلة' %}
+                                        <span class="badge rounded-pill status-badge status-{{ case.status.value|replace(' ', '_') }}">
+                                            <i class="bi {{ icon_class }}"></i>
+                                            <span>{{ status_text }}</span>
+                                        </span>
+                                    {% else %}
+                                    {{ case[field] if case[field] is not none else '-' }}
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+
+                            {# Finally show 'finished' cases #}
+                            {% for case in cases if case.status.value == 'finished' %}
+                            <tr class="case-row" data-status="{{ case.status.value }}">
+                                {% for field in visible_fields %}
+                                <td>
+                                    {% if field == 'case_date' or field == 'next_session_date' %}
+                                    <span class="text-nowrap">
+                                        <i class="bi bi-calendar3"></i> {{ case[field]|string|replace('-', '/') if case[field] else 'غير محدد' }}
+                                    </span>
+                                    {% elif field == 'case_number' %}
+                                    <strong style="color:#dc3545;">{{ case[field] }}</strong>
+                                    {% elif field == 'status' %}
+                                        {% set icon_class = 'bi-question-circle' %}
+                                        {% if case.status.value == 'in session' %}
+                                            {% set icon_class = 'bi-play-circle-fill icon-in_session' %}
+                                        {% elif case.status.value == 'active' %}
+                                            {% set icon_class = 'bi-hourglass-split' %}
+                                        {% elif case.status.value == 'inactive' %}
+                                            {% set icon_class = 'bi-pause-circle' %}
+                                        {% elif case.status.value == 'finished' %}
+                                            {% set icon_class = 'bi-check-circle-fill' %}
+                                        {% elif case.status.value == 'postponed' %}
+                                            {% set icon_class = 'bi-calendar-x-fill' %}
+                                        {% endif %}
+
+                                        {% set status_text = case.status.value|title %}
+                                        {% if case.status.value == 'active' %}
+                                            {% set status_text = 'الجلسة التالية' %}
+                                        {% elif case.status.value == 'inactive' %}
+                                            {% set status_text = 'لم تبدأ بعد' %}
+                                        {% elif case.status.value == 'finished' %}
+                                            {% set status_text = 'إنتهت' %}
+                                        {% elif case.status.value == 'postponed' %}
+                                            {% set status_text = 'مؤجلة' %}
+                                        {% elif case.status.value == 'in session' %}
+                                            {% set status_text = 'منعقدة الآن' %}
+                                        {% endif %}
+
+                                        <span class="badge rounded-pill status-badge status-{{ case.status.value|replace(' ', '_') }}">
+                                            <i class="bi {{ icon_class }}"></i>
+                                            <span>{{ status_text }}</span>
+                                        </span>
+                                    {% else %}
+                                    {{ case[field] if case[field] is not none else '-' }}
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="{{ visible_fields|length }}" class="text-center text-muted py-5">
+                                    <i class="bi bi-info-circle fs-4"></i> <span class="fs-5">لم يتم العثور على قضايا لعرضها</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# Fixed Footer Statistics #}
+        <div class="fixed-footer no-print">
+            <div class="container">
+                <div class="case-count-card" style="background-color: #d4edda; margin: 0;">
+                    <div class="row text-center">
+                        <div class="col">
+                            <h6 class="text-muted mb-1">إجمالي القضايا</h6>
+                            <h4 class="fw-bold">{{ cases|length }}</h4>
+                        </div>
+                        <div class="col">
+                            <h6 class="text-muted mb-1">منعقدة الآن</h6>
+                            <h4 class="fw-bold text-success">{{ cases|selectattr('status.value', 'equalto', 'in session')|list|length }}</h4>
+                        </div>
+                        <div class="col">
+                            <h6 class="text-muted mb-1">الجلسة التالية</h6>
+                            <h4 class="fw-bold text-info">{{ cases|selectattr('status.value', 'equalto', 'active')|list|length }}</h4>
+                        </div>
+                        <div class="col">
+                            <h6 class="text-muted mb-1">لم تبدأ بعد</h6>
+                            <h4 class="fw-bold text-secondary">{{ cases|selectattr('status.value', 'equalto', 'inactive')|list|length }}</h4>
+                        </div>
+                        <div class="col">
+                            <h6 class="text-muted mb-1">إنتهت</h6>
+                            <h4 class="fw-bold" style="color: #adb5bd;">{{ cases|selectattr('status.value', 'equalto', 'finished')|list|length }}</h4>
+                        </div>
+                        <div class="col">
+                            <h6 class="text-muted mb-1">مؤجلة</h6>
+                            <h4 class="fw-bold text-warning">{{ cases|selectattr('status.value', 'equalto', 'postponed')|list|length }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# QR Code Container - positioned over the layout #}
+    <div id="qrcode-container" class="position-fixed top-0 end-0 m-3 bg-white p-3 rounded shadow-lg border" style="z-index: 1100; max-width: 180px;">
+        <div class="text-center mb-2" style="font-size: 0.85rem; color: #003366; font-weight: bold;">
+            <i class="bi bi-qr-code"></i> متابعة مباشرة
+        </div>
+        <div id="qrcode" class="d-flex justify-content-center mb-2"></div>
+        <div class="text-center" style="font-size: 0.75rem; color: #666;">
+            امسح الرمز لمتابعة التحديثات المباشرة
+        </div>
+    </div>
+
+    {# Standard Timestamp Script #}
+    <script>
+        function updateTimestamp() {
+            const now = new Date();
+            const options = { timeZone: 'Asia/Muscat', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            const timestampEl = document.getElementById('timestamp');
+            if (timestampEl) {
+                 timestampEl.textContent = now.toLocaleString('ar-OM', options);
+            }
+        }
+        updateTimestamp();
+        setInterval(updateTimestamp, 60000); // Update timestamp every minute
+    </script>
+
+    {# Bootstrap JS Bundle #}
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+
+    <script>
+        // Generate QR code when page loads
+        window.addEventListener('load', function() {
+            try {
+                // Create QR code using qrcode-generator library
+                var qr = qrcode(0, 'L');
+                qr.addData(window.location.href);
+                qr.make();
+                
+                // Create the QR code as an image
+                var qrContainer = document.getElementById("qrcode");
+                qrContainer.innerHTML = qr.createImgTag(4, 8); // cellSize=4, margin=8
+                
+                // Style the image
+                var img = qrContainer.querySelector('img');
+                if (img) {
+                    img.style.width = '128px';
+                    img.style.height = '128px';
+                    img.style.border = '2px solid #003366';
+                    img.style.borderRadius = '8px';
+                }
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+                document.getElementById("qrcode").innerHTML = '<div style="text-align: center; color: #666;">QR غير متاح</div>';
+            }
+        });
+    </script>
+
+    {# *** UPDATED: SSE Listener + Periodic Refresh Script *** #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- SSE Setup for Immediate Updates ---
+            // IMPORTANT: don't call url_for('sse.stream') unless SSE blueprint is registered.
+            const sseEnabled = {{ 'true' if sse_enabled else 'false' }};
+            const sseStreamUrl = {% if sse_enabled %}"{{ url_for('sse.stream') }}"{% else %}null{% endif %};
+
+            if (sseEnabled && sseStreamUrl) {
+                console.log("SSE: Attempting to connect to stream...");
+                try {
+                    var eventSource = new EventSource(sseStreamUrl);
+
+                    eventSource.addEventListener('display_update', function(event) {
+                        console.log("SSE: Received 'display_update' event:", event.data);
+                        console.log("SSE: Reloading page due to update...");
+                        window.location.reload();
+                    });
+
+                    eventSource.onopen = function() {
+                        console.log("SSE: Connection opened successfully.");
+                    };
+
+                    eventSource.onerror = function(err) {
+                        console.error("SSE: Connection error occurred:", err);
+                        if (eventSource.readyState === EventSource.CLOSED) {
+                            console.log("SSE: Connection closed permanently.");
+                        }
+                    };
+                } catch (e) {
+                    console.error("SSE: Failed to create EventSource connection.", e);
+                    console.log("SSE: Falling back to periodic refresh only.");
+                }
+            } else {
+                console.log("SSE: Disabled (no REDIS_URL configured). Using periodic refresh only.");
+            }
+
+            // --- Periodic 30-Second Refresh ---
+            console.log("Setting up 30-second periodic refresh.");
+            setInterval(function() {
+                console.log("Periodic refresh: Reloading page...");
+                window.location.reload();
+            }, 30000); // 30000 milliseconds = 30 seconds
+
+        }); // End DOMContentLoaded
+    </script>
+    {# *** End of Combined Script *** #}
+
+</body>
+</html>

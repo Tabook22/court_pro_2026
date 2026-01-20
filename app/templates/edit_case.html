@@ -1,0 +1,87 @@
+<!-- templates/edit_case.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2>تعديل القضية</h2>
+    <form method="POST">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">رقم القضية</label>
+                <input type="text" name="case_number" class="form-control" value="{{ case.case_number }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">تاريخ القضية</label>
+                <input type="date" name="case_date" class="form-control"
+                    value="{{ case.case_date.strftime('%Y-%m-%d') if case.case_date else '' }}">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">تاريخ الجلسة القادمة</label>
+                <input type="text" name="next_session_date" class="form-control"
+                    value="{{ case.next_session_date or '' }}">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">الحالة</label>
+                <select name="status" class="form-control">
+                    <option value="inactive" {{ 'selected' if case.status.value=='inactive' else '' }}>لم تبدأ بعد
+                    </option>
+                    <option value="active" {{ 'selected' if case.status.value=='active' else '' }}>الجلسة التالية
+                    </option>
+                    <option value="in session" {{ 'selected' if case.status.value=='in session' else '' }}>منعقدة الآن
+                    </option>
+                    <option value="postponed" {{ 'selected' if case.status.value=='postponed' else '' }}>مؤجلة</option>
+                    <option value="finished" {{ 'selected' if case.status.value=='finished' else '' }}>إنتهت</option>
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">نتيجة الجلسة</label>
+            <textarea name="session_result" class="form-control" rows="3" required>{{ case.session_result }}</textarea>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">عدد الجلسات</label>
+                <input type="number" name="num_sessions" class="form-control" value="{{ case.num_sessions }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">موضوع القضية</label>
+                <input type="text" name="case_subject" class="form-control" value="{{ case.case_subject }}" required>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">المدعى عليه</label>
+                <input type="text" name="defendant" class="form-control" value="{{ case.defendant }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">المدعي</label>
+                <input type="text" name="plaintiff" class="form-control" value="{{ case.plaintiff }}" required>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">رقم النيابة</label>
+                <input type="text" name="prosecution_number" class="form-control" value="{{ case.prosecution_number }}"
+                    required>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">قسم الشرطة</label>
+                <input type="text" name="police_department" class="form-control" value="{{ case.police_department }}"
+                    required>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">رقم القضية الشرطية</label>
+                <input type="text" name="police_case_number" class="form-control" value="{{ case.police_case_number }}"
+                    required>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 text-end">
+                <a href="{{ url_for('cases.list_cases') }}" class="btn btn-secondary me-2">إلغاء</a>
+                <button type="submit" class="btn btn-primary">تحديث القضية</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

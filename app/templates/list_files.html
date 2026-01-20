@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة ملفات Excel المرفوعة{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-file-earmark-excel"></i> ملفات Excel المرفوعة</h1>
+        {# يمكنك إضافة زر للقفز إلى قسم الرفع إذا لزم الأمر #}
+        {# <a href="#uploadFormContainer" class="btn btn-primary">رفع ملف جديد</a> #}
+    </div>
+
+    {# استخدام المتغير sorted من دالة العرض #}
+    {% if files_by_year_month_sorted %}
+    <p class="text-muted">اختر ملف Excel لمعالجته واستيراد القضايا إلى قاعدة البيانات.</p>
+    <div class="accordion" id="yearAccordion">
+        {# تكرار السنوات (المصنفة بالفعل في دالة العرض) #}
+        {% for year, sorted_months in files_by_year_month_sorted.items() %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="yearHeading-{{ year }}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#yearCollapse-{{ year }}" aria-expanded="false"
+                    aria-controls="yearCollapse-{{ year }}">
+                    <i class="bi bi-calendar-fill me-2"></i> السنة {{ year }}
+                </button>
+            </h2>
+            <div id="yearCollapse-{{ year }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
+                aria-labelledby="yearHeading-{{ year }}" data-bs-parent="#yearAccordion">
+                <div class="accordion-body p-2">
+                    {% if sorted_months %}
+                    <div class="accordion" id="monthAccordion-{{ year }}">
+                        {# تكرار الأزمنة (شهر، ملفات) مرتبة مسبقاً #}
+                        {% for month, files in sorted_months %}
+                        <div class="accordion-item">
+                            <h3 class="accordion-header" id="monthHeading-{{ year }}-{{ month|replace('-', '_') }}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#monthCollapse-{{ year }}-{{ month|replace('-', '_') }}"
+                                    aria-expanded="false"
+                                    aria-controls="monthCollapse-{{ year }}-{{ month|replace('-', '_') }}">
+                                    <i class="bi bi-calendar3 me-2"></i>
+                                    {{ month.split('-', 1)[1] if '-' in month else month }}
+                                    <span class="badge bg-secondary ms-2">{{ files|length }} ملف</span>
+                                </button>
+                            </h3>
+                            <div id="monthCollapse-{{ year }}-{{ month|replace('-', '_') }}"
+                                class="accordion-collapse collapse"
+                                aria-labelledby="monthHeading-{{ year }}-{{ month|replace('-', '_') }}"
+                                data-bs-parent="#monthAccordion-{{ year }}">
+                                <div class="accordion-body">
+                                    {% if files %}
+                                    <ul class="list-group">
+                                        {% for file_rel_path in files|sort %}
+                                        <li
+                                            class="list-group-item d-flex flex-wrap justify-content-between align-items-center">
+                                            <span class="me-3">
+                                                <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+                                                {{ file_rel_path.split('/')[-1] if '/' in file_rel_path else
+                                                file_rel_path }}
+                                            </span>
+                                            {# أزرار الإجراءات #}
+                                            <div class="btn-group mt-2 mt-md-0" role="group" aria-label="إجراءات الملف">
+                                                <button class="btn btn-sm btn-outline-secondary view-btn"
+                                                    title="عرض الملف" data-year="{{ year }}" data-month="{{ month }}"
+                                                    data-file="{{ file_rel_path }}">
+                                                    <i class="bi bi-eye"></i> عرض
+                                                </button>
+                                                <button class="btn btn-sm btn-primary select-btn"
+                                                    title="معالجة واستيراد البيانات" data-year="{{ year }}"
+                                                    data-month="{{ month }}" data-file="{{ file_rel_path }}">
+                                                    <i class="bi bi-check-circle"></i> اختيار واستيراد
+                                                </button>
+                                                <button class="btn btn-sm btn-danger delete-btn" title="حذف الملف"
+                                                    data-year="{{ year }}" data-month="{{ month }}"
+                                                    data-file="{{ file_rel_path }}">
+                                                    <i class="bi bi-trash"></i> حذف
+                                                </button>
+                                            </div>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% else %}
+                                    <p class="text-center text-muted">لم يتم العثور على ملفات لهذا الشهر.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted">لم يتم العثور على شهور بها ملفات مرفوعة لهذه السنة.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center" role="alert">
+        <i class="bi bi-info-circle me-2"></i> لم يتم العثور على ملفات مرفوعة. قم برفع ملف Excel باستخدام نموذج الشريط
+        الجانبي.
+    </div>
+    {% endif %}
+</div>
+
+{# احتفظ بنموذج الملاحظات هنا #}
+<div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="feedbackModalLabel">حالة العملية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body" id="feedbackModalBody">
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{# التأكد من تحميل Bootstrap bundle JS (عادة في base.html) #}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let feedbackModal = null;
+        try {
+            feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+        } catch (e) {
+            console.error("لم يتم تهيئة نموذج الملاحظات بنجاح.", e);
+        }
+
+        function showFeedback(message, isSuccess = true) {
+            if (feedbackModal) {
+                const modalBody = document.getElementById('feedbackModalBody');
+                modalBody.textContent = message;
+                modalBody.className = `modal-body ${isSuccess ? 'text-success' : 'text-danger'}`;
+                feedbackModal.show();
+            } else {
+                alert(message);
+            }
+        }
+
+        function importToDatabase(jsonFilename, buttonElement) {
+            buttonElement.innerHTML = '<i class="bi bi-hourglass-split"></i> جاري الاستيراد...';
+            buttonElement.disabled = true;
+
+            fetch("{{ url_for('main.import_to_database') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `json_filename=${encodeURIComponent(jsonFilename)}`
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(`خطأ في الخادم: ${response.status} - ${text}`) });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let feedbackMessage = data.message || "انتهت عملية الاستيراد.";
+                    showFeedback(feedbackMessage, data.success);
+                    if (data.success) {
+                        console.log(`استيراد ناجح للملف ${jsonFilename}. أضيف: ${data.cases_added}, تم تخطي: ${data.skipped_count}, أخطاء: ${data.error_count}`);
+                    } else {
+                        console.error(`فشل الاستيراد للملف ${jsonFilename}. الرسالة: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('خطأ أثناء استيراد الملف:', error);
+                    showFeedback(`حدث خطأ أثناء الاستيراد: ${error.message}`, false);
+                })
+                .finally(() => {
+                    buttonElement.innerHTML = '<i class="bi bi-check-circle"></i> اختيار واستيراد';
+                    buttonElement.disabled = false;
+                });
+        }
+
+        // --- زر اختيار / معالجة / استيراد ---
+        document.querySelectorAll('.select-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const year = this.getAttribute('data-year');
+                const month = this.getAttribute('data-month');
+                const file_rel_path = this.getAttribute('data-file');
+                const selectButton = this;
+
+                selectButton.innerHTML = '<i class="bi bi-gear"></i> جاري المعالجة...';
+                selectButton.disabled = true;
+
+                fetch("{{ url_for('main.process_excel') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&file=${encodeURIComponent(file_rel_path)}`
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.text().then(text => { throw new Error(`خطأ في الخادم: ${response.status} - ${text}`) });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success && data.json_filename) {
+                            const schema = data.schema || {};
+                            const schemaInfo = `
+                            تمت معالجة الملف بنجاح!
+                            ملف JSON: ${data.json_filename}
+                            الأعمدة المكتشفة: ${Object.keys(schema.translated_headers || {}).length}
+                            عدد الصفوف: ${schema.row_count !== undefined ? schema.row_count : 'غير محدد'}
+                        `;
+                            showFeedback(schemaInfo, true);
+                            console.log("المخطط المعالج:", schema);
+                            const shouldImport = confirm('اكتملت المعالجة. هل ترغب في استيراد هذه البيانات إلى قاعدة البيانات الآن؟');
+                            if (shouldImport) {
+                                importToDatabase(data.json_filename, selectButton);
+                                return;
+                            } else {
+                                selectButton.innerHTML = '<i class="bi bi-check-circle"></i> اختيار واستيراد';
+                                selectButton.disabled = false;
+                            }
+                        } else {
+                            showFeedback(`حدث خطأ أثناء معالجة الملف: ${data.message || 'خطأ غير معروف في المعالجة.'}`, false);
+                            selectButton.innerHTML = '<i class="bi bi-check-circle"></i> اختيار واستيراد';
+                            selectButton.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('خطأ أثناء معالجة الملف:', error);
+                        showFeedback(`حدث خطأ أثناء معالجة الملف: ${error.message}`, false);
+                        selectButton.innerHTML = '<i class="bi bi-check-circle"></i> اختيار واستيراد';
+                        selectButton.disabled = false;
+                    });
+            });
+        });
+
+        // --- زر الحذف ---
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const year = this.getAttribute('data-year');
+                const month = this.getAttribute('data-month');
+                const file_rel_path = this.getAttribute('data-file');
+                const fileNameDisplay = file_rel_path.split('/').pop();
+
+                if (confirm(`هل أنت متأكد أنك تريد حذف الملف "${fileNameDisplay}"؟ هذا الإجراء لا يمكن التراجع عنه.`)) {
+                    fetch("{{ url_for('main.delete_file') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&file=${encodeURIComponent(file_rel_path)}`
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.text().then(text => { throw new Error(`خطأ في الخادم: ${response.status} - ${text}`) });
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            showFeedback(data.message || 'انتهت عملية الحذف.', data.success);
+                            if (data.success) {
+                                setTimeout(() => { location.reload(); }, 1500);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('خطأ أثناء عملية الحذف:', error);
+                            showFeedback(`حدث خطأ أثناء حذف الملف: ${error.message}`, false);
+                        });
+                }
+            });
+        });
+
+        // --- زر العرض ---
+        document.querySelectorAll('.view-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const year = this.getAttribute('data-year');
+                const month = this.getAttribute('data-month');
+                const file_rel_path = this.getAttribute('data-file');
+                const viewUrl = "{{ url_for('main.view_file', year='YEAR', month='MONTH', file_rel_path='FILEPATH') }}".replace('YEAR', encodeURIComponent(year)).replace('MONTH', encodeURIComponent(month)).replace('FILEPATH', encodeURIComponent(file_rel_path));
+                window.open(viewUrl, '_blank');
+            });
+        });
+    });
+</script>
+{% endblock %}

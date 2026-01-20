@@ -1,0 +1,130 @@
+{
+  "schema": {
+    "original_headers": [
+      "الرقم المقابل",
+      "تاريخ الجلسة المقبلة",
+      "مستأنف ضده",
+      "مستأنف",
+      "رقم الدعوى",
+      "م"
+    ],
+    "translated_headers": {
+      "الرقم المقابل": "corresponding_number",
+      "تاريخ الجلسة المقبلة": "date_of_next_session",
+      "مستأنف ضده": "appellant_against_him",
+      "مستأنف": "appellant",
+      "رقم الدعوى": "case_number",
+      "م": "m"
+    },
+    "column_types": {
+      "corresponding_number": "string",
+      "date_of_next_session": "date",
+      "appellant_against_him": "string",
+      "appellant": "string",
+      "case_number": "string",
+      "m": "integer"
+    },
+    "row_count": 9,
+    "processed_date": "2024-12-06T05:16:46.009974+00:00",
+    "translation_mapping": {
+      "الرقم المقابل": {
+        "translated": "corresponding_number",
+        "original": "الرقم المقابل"
+      },
+      "تاريخ الجلسة المقبلة": {
+        "translated": "date_of_next_session",
+        "original": "تاريخ الجلسة المقبلة"
+      },
+      "مستأنف ضده": {
+        "translated": "appellant_against_him",
+        "original": "مستأنف ضده"
+      },
+      "مستأنف": {
+        "translated": "appellant",
+        "original": "مستأنف"
+      },
+      "رقم الدعوى": {
+        "translated": "case_number",
+        "original": "رقم الدعوى"
+      },
+      "م": {
+        "translated": "m",
+        "original": "م"
+      }
+    }
+  },
+  "data": [
+    {
+      "corresponding_number": null,
+      "date_of_next_session": "2022-05-16",
+      "appellant_against_him": "شركة طرق عمان الهندسية  - ماجد بن سعيد بن سعد  غواص",
+      "appellant": "شركة الاعتماد للمعدات وغطع الغيار ",
+      "case_number": "170/7103/2021",
+      "m": 1
+    },
+    {
+      "corresponding_number": null,
+      "date_of_next_session": "2022-05-16",
+      "appellant_against_him": "شركة ظفار المدمجة ",
+      "appellant": "شركة العمروني العالمية للإنشاءات ش م م",
+      "case_number": "285/7103/2021",
+      "m": 2
+    },
+    {
+      "corresponding_number": null,
+      "date_of_next_session": null,
+      "appellant_against_him": "وزارة الاسكان  / المديرية العامة للاسكان بمحافظة ظفار ",
+      "appellant": "ورثة / بيت عمر حور  الشحري ",
+      "case_number": "423/7102/2021",
+      "m": 3
+    },
+    {
+      "corresponding_number": null,
+      "date_of_next_session": "2022-05-30",
+      "appellant_against_him": "ايوب بن صالح بن عوض  النوبي",
+      "appellant": "الشركة العمانية المتحدة للتأمين ",
+      "case_number": "551/7102/2021",
+      "m": 4
+    },
+    {
+      "corresponding_number": null,
+      "date_of_next_session": null,
+      "appellant_against_him": "محمد بن سالم بن محاد  المهري",
+      "appellant": "الشركة العمانية المتحدة للتأمين",
+      "case_number": "553/7102/2021",
+      "m": 5
+    },
+    {
+      "corresponding_number": null,
+      "date_of_next_session": null,
+      "appellant_against_him": "شركة ظفار للتامين ",
+      "appellant": "مسلم غانم علي  العوائد ",
+      "case_number": "645/7102/2021",
+      "m": 6
+    },
+    {
+      "corresponding_number": null,
+      "date_of_next_session": null,
+      "appellant_against_him": "عبدالله بن محمد بن عبدالله  برهام باعمر",
+      "appellant": "الشركة الوطنية للتأمين على الحياه والعام",
+      "case_number": "62/7102/2022",
+      "m": 7
+    },
+    {
+      "corresponding_number": null,
+      "date_of_next_session": "2022-05-30",
+      "appellant_against_him": "شركة ظفار للسيارات",
+      "appellant": "محمد بن طاهر محمد  ال ابراهيم",
+      "case_number": "197/7103/2020",
+      "m": 1
+    },
+    {
+      "corresponding_number": null,
+      "date_of_next_session": "2022-05-30",
+      "appellant_against_him": "شركة ظفار للتأمين",
+      "appellant": "شهدات حسين محمدابراهيم   إبراهيم",
+      "case_number": "274/7102/2021",
+      "m": 2
+    }
+  ]
+}

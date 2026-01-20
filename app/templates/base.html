@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+{# Ensure RTL direction and Arabic language are set #}
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {# Title can still be dynamic based on child template #}
+    <title>{% block title %}نظام إدارة القضايا{% endblock %}</title>
+    {# Link Bootstrap CSS #}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    {# Link Bootstrap Icons #}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    {# Link your custom CSS #}
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {# Block for extra CSS in child templates #}
+    {% block extra_css %}{% endblock %}
+    <style>
+        /* Ensure body respects RTL */
+        body { direction: rtl; }
+        /* Basic sidebar styling (adjust as needed in style.css) */
+        .sidebar {
+            background-color: #343a40; /* Dark background */
+            min-height: 100vh;
+            color: #adb5bd; /* Light gray text */
+            padding-top: 1rem;
+        }
+        .sidebar .nav-link {
+            color: #000000;
+            padding: 0.75rem 1.5rem; /* Adjust padding */
+            font-size: 1rem;
+            display: flex; /* Use flex for icon alignment */
+            align-items: center;
+        }
+         .sidebar .nav-link .bi { /* Target icons within nav links */
+             font-size: 1.1rem; /* Slightly larger icons */
+         }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: #495057;
+            color: #ffffff; /* White text on hover/active */
+        }
+        .sidebar .navbar-brand {
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center brand content */
+        }
+        .sidebar hr {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .main-content {
+            padding: 2rem; /* Add padding to main content area */
+        }
+        .footer {
+            background-color: #e9ecef; /* Light background for footer */
+        }
+        /* Style for upload form card in sidebar */
+        .sidebar .card {
+            border: none;
+            margin-top: 1.5rem; /* Space above upload card */
+        }
+        .sidebar .card-header {
+             padding: 0.75rem 1.5rem;
+             display: flex; /* Align icon and text */
+             align-items: center;
+        }
+         .sidebar .card-body {
+             padding: 1rem 1.5rem;
+        }
+        .sidebar .card label {
+             color: #adb5bd; /* Match sidebar text color */
+        }
+        .sidebar .card .form-text {
+             color: #6c757d; /* Darker gray for help text */
+        }
+         /* Ensure icons have spacing on the correct side in RTL */
+         .sidebar .nav-link .bi,
+         .sidebar .card-header .bi,
+         .sidebar .btn .bi {
+             margin-left: 0.5rem; /* Add margin to the END (left in RTL) */
+             margin-right: 0; /* Reset margin-right */
+         }
+         /* Adjust spacing for specific icons if needed */
+         .sidebar .navbar-brand .bi { margin-left: 0.5rem; margin-right: 0; }
+
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            {# Sidebar only shown if user is authenticated #}
+            {% if current_user.is_authenticated %}
+            <div class="col-md-3 col-lg-2 px-0 sidebar d-flex flex-column"> {# Adjusted columns for responsiveness #}
+                {# Sidebar Content #}
+                <a class="navbar-brand p-3 text-white text-center" href="{{ url_for('main.index') }}">
+                    <i class="bi bi-briefcase fs-4"></i> {# Removed spacing class, handled by parent style #}
+                    <span>مدير القضايا</span> {# Arabic Brand Name #}
+                </a>
+                <hr class="text-white mx-3">
+
+                {# User Info - RTL #}
+                <div class="px-3 mb-3 text-white-50 small">
+                    <div><i class="bi bi-person-circle"></i> المستخدم: {{ current_user.name }}</div>
+                    <div><i class="bi bi-shield-check"></i> الدور: {% if current_user.is_admin %}مدير النظام{% else %}مستخدم{% endif %}</div>
+                    {% if current_user.court %}
+                    <div><i class="bi bi-building"></i> المحكمة: {{ current_user.court.name }}</div>
+                    {% endif %}
+                    {% if session.get('impersonating') %}
+                    <div class="mt-2">
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-person-gear"></i> وضع التمثيل النشط
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {# Stop Impersonation Button - Show only when impersonating #}
+                {% if session.get('impersonating') %}
+                <div class="px-3 mb-3">
+                    <a href="{{ url_for('auth.stop_impersonation') }}" class="btn btn-warning btn-sm w-100">
+                        <i class="bi bi-arrow-left-circle"></i> إنهاء التمثيل
+                    </a>
+                </div>
+                {% endif %}
+
+                {# Navigation Links - RTL #}
+                <ul class="nav flex-column flex-grow-1">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.index' or request.endpoint == 'main.control' %}active{% endif %}" href="{{ url_for('main.index') }}">
+                            <i class="bi bi-house-door-fill"></i> <span>الرئيسية / التحكم</span> {# RTL: Text #}
+                        </a>
+                    </li>
+
+                     {# Show all management links to both admin and regular users #}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'display.manage_display' %}active{% endif %}" href="{{ url_for('display.manage_display') }}">
+                            <i class="bi bi-display"></i> <span>إدارة العرض</span>
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'display.display_settings' %}active{% endif %}" href="{{ url_for('display.display_settings') }}">
+                            <i class="bi bi-sliders"></i> <span>إعدادات العرض</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'display.general_control' %}active{% endif %}" href="{{ url_for('display.general_control') }}">
+                            <i class="bi bi-list-check"></i> <span>تحكم العرض التفاعلي</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'cases.add_case' %}active{% endif %}" href="{{ url_for('cases.add_case') }}">
+                            <i class="bi bi-file-earmark-plus-fill"></i> <span>إضافة قضية يدوياً</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.list_files' %}active{% endif %}" href="{{ url_for('main.list_files') }}">
+                            <i class="bi bi-file-earmark-excel-fill"></i> <span>استيراد قضايا (Excel)</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'cases.list_cases' %}active{% endif %}" href="{{ url_for('cases.list_cases') }}">
+                            <i class="bi bi-folder-fill"></i> <span>إدارة القضايا</span>
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'auth.list_users' %}active{% endif %}" href="{{ url_for('auth.list_users') }}">
+                            <i class="bi bi-people-fill"></i> <span>إدارة المستخدمين</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.statistics' %}active{% endif %}" href="{{ url_for('main.statistics') }}">
+                            <i class="bi bi-graph-up"></i> <span>الإحصائيات</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+
+                    {# Link visible to all logged-in users #}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'display.general' %}active{% endif %}" href="{{ url_for('display.general') }}" target="_blank">
+                            <i class="bi bi-tv-fill"></i> <span>عرض الشاشة العامة</span> {# RTL: Text #}
+                        </a>
+                    </li>
+
+                    {# Upload Form - For All Users - RTL #}
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item mt-3" id="uploadFormContainer">
+                         <div class="card mx-3" style="background-color:#343a40">
+                            <div class="card-header text-white" style="background-color: #495057;">
+                                <i class="bi bi-upload"></i> <h6 class="mb-0 d-inline">رفع ملف Excel</h6> {# RTL: Text #}
+                            </div>
+                            <div class="card-body">
+                                <form id="uploadForm" action="{{ url_for('main.upload_file') }}" method="post" enctype="multipart/form-data">
+                                    <div class="mb-2">
+                                        <label for="excelFile" class="form-label small">اختر ملف:</label> {# RTL: Text #}
+                                        <input class="form-control form-control-sm" type="file" id="excelFile" name="excelFile" accept=".xls,.xlsx" required>
+                                        <div class="form-text small mt-1">الصيغ المقبولة: .xls, .xlsx</div> {# RTL: Text #}
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                             <i class="bi bi-cloud-arrow-up-fill"></i> <span>رفع</span> {# RTL: Text #}
+                                         </button>
+                                    </div>
+                                </form>
+                            </div>
+                         </div>
+                    </li>
+                    {% endif %} {# End admin-only upload form #}
+
+                    {# Logout Link - Aligned to bottom - RTL #}
+                    <li class="nav-item mt-auto mb-2">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                            <i class="bi bi-box-arrow-right"></i> <span>تسجيل الخروج</span> {# RTL: Text #}
+                        </a>
+                    </li>
+                </ul> {# End nav flex-column #}
+
+            </div> {# End sidebar #}
+
+             {# Main Content Area #}
+             {# Adjust column width based on whether sidebar is present #}
+            <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4 main-content">
+            {% else %}
+             {# Full width if user is not authenticated (e.g., login page) #}
+            <div class="col-12 main-content">
+            {% endif %} {# End if current_user.is_authenticated #}
+
+                {# Flash Messages #}
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            {% set alert_class = 'alert-' + category if category in ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'] else 'alert-secondary' %}
+                            <div class="alert {{ alert_class }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button> {# RTL: Label #}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {# Main Content Block for Child Templates #}
+                {% block content %}{% endblock %}
+
+            </div> {# End main-content col #}
+        </div> {# End row #}
+    </div> {# End container-fluid #}
+
+    {# Upload Status Modal (or other common modals) - RTL #}
+    <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadModalLabel">حالة الرفع</h5> {# RTL: Text #}
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button> {# RTL: Label #}
+                </div>
+                <div class="modal-body" id="uploadModalBody">
+                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button> {# RTL: Text #}
+                </div>
+            </div>
+        </div>
+    </div>
+    {# Add other common modals here if needed #}
+
+
+    {# Footer - RTL #}
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            {# RTL: Text #}
+            <span class="text-muted">© {{ now.year }} نظام إدارة القضايا</span>
+        </div>
+    </footer>
+
+    {# Link Bootstrap JS Bundle (includes Popper) - Place at end of body #}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+
+    {# Block for extra JS in child templates #}
+    {% block scripts %}
+    {# Common JavaScript can also go here if preferred over inline script below #}
+    {% endblock %}
+
+    {# Common JavaScript (Tooltip init, Upload form handler) - RTL Text #}
+    <script>
+        // Activate Bootstrap tooltips (if used)
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+
+        // AJAX Upload Form Handler (only add listener if the form exists)
+        const uploadForm = document.getElementById('uploadForm');
+        if (uploadForm) {
+            const uploadModalElement = document.getElementById('uploadModal');
+            const uploadModal = uploadModalElement ? new bootstrap.Modal(uploadModalElement) : null;
+            const uploadModalBody = document.getElementById('uploadModalBody');
+
+            uploadForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var formData = new FormData(this);
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalButtonHTML = submitButton.innerHTML; // Store full HTML
+                submitButton.disabled = true;
+                // RTL: Text
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جارٍ الرفع...';
+
+
+                fetch("{{ url_for('main.upload_file') }}", { // Use url_for for robustness
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (uploadModalBody) {
+                         uploadModalBody.textContent = data.message; // Message likely from backend
+                         uploadModalBody.className = `modal-body ${data.success ? 'text-success' : 'text-danger'}`;
+                         if(uploadModal) uploadModal.show();
+                    } else {
+                         alert(data.message); // Fallback
+                    }
+                })
+                .catch(error => {
+                    console.error('Upload Error:', error);
+                    // RTL: Text
+                    const errorMsg = 'حدث خطأ غير متوقع أثناء الرفع.';
+                    if (uploadModalBody) {
+                         uploadModalBody.textContent = errorMsg;
+                         uploadModalBody.className = 'modal-body text-danger';
+                         if(uploadModal) uploadModal.show();
+                    } else {
+                         alert(errorMsg);
+                    }
+                })
+                .finally(() => {
+                    // Reset button state
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonHTML; // Restore original HTML
+                    // Clear the file input
+                    document.getElementById('excelFile').value = '';
+                });
+            });
+        } // end if (uploadForm)
+
+    </script>
+</body>
+</html>

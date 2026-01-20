@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المستخدمين{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-people-fill"></i> إدارة المستخدمين</h2>
+        {# رابط إلى المسار الخاص بإضافة/تسجيل المستخدمين #}
+        <a href="{{ url_for('auth.admin_add_user') }}" class="btn btn-primary">
+            <i class="bi bi-person-plus-fill"></i> إضافة مستخدم جديد
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>اسم المستخدم</th>
+                            <th>الاسم</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>الهاتف</th>
+                            <th>المحكمة</th>
+                            <th>الدور</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.tel if user.tel else '-' }}</td>
+                            <td>
+                                {% if user.court %}
+                                <span class="badge bg-success">{{ user.court.name }}</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">غير مخصص</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if user.is_admin %}bg-primary{% else %}bg-secondary{% endif %}">
+                                    {{ 'مشرف' if user.is_admin else 'مستخدم' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group" aria-label="إجراءات المستخدم">
+                                    {# زر التعديل #}
+                                    <a href="{{ url_for('auth.edit_user', user_id=user.id) }}"
+                                        class="btn btn-sm btn-outline-secondary" title="تعديل المستخدم">
+                                        <i class="bi bi-pencil-square"></i> تعديل
+                                    </a>
+                                    {# زر الحذف - يتم تعطيله إذا كان المستخدم هو المستخدم الحالي أو آخر مشرف #}
+                                    {% set is_last_admin = user.is_admin and users|selectattr('is_admin')|list|length <=
+                                        1 %} <button type="button" class="btn btn-sm btn-outline-danger"
+                                        onclick="confirmDelete({{ user.id }}, '{{ user.username }}')"
+                                        title="حذف المستخدم" {% if user.id==current_user.id or is_last_admin
+                                        %}disabled{% endif %}>
+                                        <i class="bi bi-trash-fill"></i> حذف
+                                        </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">لم يتم العثور على مستخدمين.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserModalLabel">تأكيد الحذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد أنك تريد حذف المستخدم <strong id="deleteUsername"></strong>؟ لا يمكن التراجع عن هذا
+                الإجراء.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                {# النموذج يرسل إلى مسار حذف المستخدم #}
+                <form id="deleteUserForm" method="POST" style="display: inline;">
+                    {# أضف رمز CSRF هنا إذا كنت تستخدم Flask-WTF #}
+                    {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+                    <button type="submit" class="btn btn-danger">حذف المستخدم</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{# تأكد من تحميل Bootstrap JS عبر base.html #}
+<script>
+    // جافا سكريبت لعرض نافذة التأكيد عند الحذف
+    let deleteModal = null;
+    let deleteForm = null;
+    let deleteUsernameSpan = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalElement = document.getElementById('deleteUserModal');
+        if (modalElement) {
+            deleteModal = new bootstrap.Modal(modalElement);
+        }
+        deleteForm = document.getElementById('deleteUserForm');
+        deleteUsernameSpan = document.getElementById('deleteUsername');
+    });
+
+    function confirmDelete(userId, username) {
+        if (!deleteModal || !deleteForm || !deleteUsernameSpan) {
+            console.error("عناصر نافذة الحذف غير موجودة.");
+            // استخدام طريقة التأكيد الأساسية في حال عدم توفر العناصر
+            if (confirm(`هل أنت متأكد أنك تريد حذف المستخدم "${username}"؟`)) {
+                // إنشاء نموذج يدويًا وإرساله (أقل مثالية)
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{{ url_for('auth.delete_user', user_id=0) }}".replace('0', userId);
+                // أضف رمز CSRF إذا لزم الأمر
+                document.body.appendChild(form);
+                form.submit();
+            }
+            return;
+        }
+
+        // تعيين اسم المستخدم في جسم النافذة
+        deleteUsernameSpan.textContent = username;
+        // تعيين رابط الإجراء للنموذج بشكل ديناميكي
+        deleteForm.action = "{{ url_for('auth.delete_user', user_id=0) }}".replace('0', userId);
+        // عرض النافذة
+        deleteModal.show();
+    }
+</script>
+{% endblock %}

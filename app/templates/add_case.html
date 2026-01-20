@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة قضية جديدة{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-plus-circle"></i> إضافة قضية جديدة</h2>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">رقم القضية</label>
+                        <input type="text" name="case_number" class="form-control" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">تاريخ القضية</label>
+                        <input type="date" name="case_date" class="form-control" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">تاريخ الجلسة القادمة</label>
+                        <input type="date" name="next_session_date" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">موضوع القضية</label>
+                        <input type="text" name="case_subject" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">عدد الجلسات</label>
+                        <input type="number" name="num_sessions" class="form-control" required min="1" value="1">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">المدعي</label>
+                        <input type="text" name="plaintiff" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">المدعى عليه</label>
+                        <input type="text" name="defendant" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">رقم النيابة</label>
+                        <input type="text" name="prosecution_number" class="form-control" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">قسم الشرطة</label>
+                        <input type="text" name="police_department" class="form-control" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">رقم القضية الشرطية</label>
+                        <input type="text" name="police_case_number" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">نتيجة الجلسة</label>
+                    <textarea name="session_result" class="form-control" rows="3" required></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="status" name="status" value="active">
+                        <label class="form-check-label" for="status">تعيين كنشطة</label>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('cases.list_cases') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> العودة إلى القضايا
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> حفظ القضية
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // تعيين تاريخ اليوم كالتاريخ الافتراضي لتاريخ القضية
+    document.addEventListener('DOMContentLoaded', function () {
+        const today = new Date().toISOString().split('T')[0];
+        document.querySelector('input[name="case_date"]').value = today;
+    });
+</script>
+{% endblock %}

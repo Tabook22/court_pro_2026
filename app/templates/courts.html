@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المحاكم - نظام إدارة القضايا{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="bi bi-building"></i> إدارة المحاكم</h2>
+                <a href="{{ url_for('main.add_court') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> إضافة محكمة جديدة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courts Overview Cards -->
+    <div class="row mb-4">
+        {% for court in courts %}
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="card h-100 {% if not court.is_active %}bg-light{% endif %}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ court.name }}</h5>
+                    <span class="badge {% if court.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                        {{ 'نشط' if court.is_active else 'غير نشط' }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">{{ court.description or 'لا يوجد وصف' }}</p>
+
+                    <!-- Statistics -->
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h4 class="text-primary">{{ court.users|length }}</h4>
+                                <small class="text-muted">المستخدمين</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">{{ court.cases|length }}</h4>
+                            <small class="text-muted">القضايا</small>
+                        </div>
+                    </div>
+
+                    <!-- Users List -->
+                    {% if court.users %}
+                    <div class="mb-3">
+                        <h6>المستخدمين المخصصين:</h6>
+                        <div class="list-group list-group-flush">
+                            {% for user in court.users %}
+                            <div class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ user.name }}</strong>
+                                    <small class="text-muted d-block">{{ user.username }}</small>
+                                </div>
+                                <div>
+                                    {% if user.is_admin %}
+                                    <span class="badge bg-warning text-dark">مدير</span>
+                                    {% endif %}
+                                    <a href="{{ url_for('auth.impersonate_user', user_id=user.id) }}"
+                                        class="btn btn-sm btn-outline-primary" title="تمثيل المستخدم">
+                                        <i class="bi bi-person-gear"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Case Status Summary -->
+                    {% if court.cases %}
+                    <div class="mb-3">
+                        <h6>حالة القضايا:</h6>
+                        {% set active_cases = court.cases|selectattr('status', 'equalto', 'active')|list %}
+                        {% set inactive_cases = court.cases|selectattr('status', 'equalto', 'inactive')|list %}
+                        {% set finished_cases = court.cases|selectattr('status', 'equalto', 'finished')|list %}
+
+                        <div class="d-flex justify-content-between">
+                            <span class="badge bg-success">نشطة: {{ active_cases|length }}</span>
+                            <span class="badge bg-warning">غير نشطة: {{ inactive_cases|length }}</span>
+                            <span class="badge bg-secondary">منتهية: {{ finished_cases|length }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group w-100" role="group">
+                        <a href="{{ url_for('main.view_court_details', court_id=court.id) }}"
+                            class="btn btn-info btn-sm">
+                            <i class="bi bi-eye"></i> عرض التفاصيل
+                        </a>
+                        <a href="{{ url_for('main.edit_court', court_id=court.id) }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-pencil"></i> تعديل
+                        </a>
+                        <a href="{{ url_for('main.court_cases', court_id=court.id) }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-briefcase"></i> القضايا
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle"></i> لا توجد محاكم مسجلة.
+                <a href="{{ url_for('main.add_court') }}" class="alert-link">انقر هنا لإضافة محكمة جديدة</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

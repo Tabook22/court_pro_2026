@@ -1,0 +1,46 @@
+modules = ["web", "python-3.12"]
+run = "yes "
+
+[nix]
+channel = "stable-24_05"
+packages = ["glibcLocales"]
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
+localPort = 8000
+externalPort = 8000
+
+[[ports]]
+localPort = 8080
+externalPort = 80
+
+[deployment]
+run = ["sh", "-c", "python app.py"]
+deploymentTarget = "cloudrun"
+
+[workflows]
+runButton = "Flask App"
+
+[[workflows.workflow]]
+name = "Flask Web App"
+author = 2340853
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app.py"
+
+[[workflows.workflow]]
+name = "Flask App"
+author = 2340853
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app.py"
+
+[agent]
+expertMode = true

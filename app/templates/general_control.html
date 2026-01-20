@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+{# Ensure base.html has <html lang="ar" dir="rtl"> #}
+
+{% block title %} التحكم بترتيب عرض القضايا {% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- Add RTL Direction (if not set on html/body in base.html) --- */
+    body {
+        direction: rtl;
+    }
+
+    /* --- Styles from previous version --- */
+    #sortable-cases {
+        list-style-type: none;
+        padding: 0;
+        margin: 0 auto;
+    }
+
+    .case-item {
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.75rem;
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 0.375rem;
+        cursor: grab;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        border-right: 1px solid #e0e0e0;
+        border-left: none;
+    }
+
+    .case-item[data-status="in session"] {
+        background-color: #d1e7dd;
+        border-right: 5px solid #198754;
+        border-left: none;
+    }
+
+    .case-item:hover {
+        border-color: #adb5bd;
+        border-right-color: #adb5bd;
+        background-color: #f8f9fa;
+    }
+
+    .case-item.sortable-ghost {
+        background-color: #cfe2ff;
+        border-style: dashed;
+        opacity: 0.6;
+    }
+
+    .case-item.sortable-chosen {
+        cursor: grabbing;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .drag-handle {
+        font-size: 1.4rem;
+        color: #adb5bd;
+        margin-left: 0.75rem;
+        margin-right: 0;
+        cursor: grab;
+        flex-shrink: 0;
+        align-self: center;
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+
+    .case-details-grid {
+        flex-grow: 1;
+        display: grid;
+        grid-template-columns: minmax(100px, 1.2fr) minmax(150px, 1.5fr) minmax(150px, 1.5fr);
+        gap: 0.5rem 1rem;
+        align-items: center;
+        font-size: 0.9rem;
+        margin-left: 1rem;
+        margin-right: 0;
+    }
+
+    .case-number-subject {
+        grid-column: 1 / 2;
+        text-align: right;
+    }
+
+    .case-plaintiff {
+        grid-column: 2 / 3;
+        text-align: right;
+        padding-right: 5px;
+    }
+
+    /* RTL padding */
+    .case-defendant {
+        grid-column: 3 / 4;
+        text-align: right;
+        padding-right: 5px;
+    }
+
+    /* RTL padding */
+    .case-number {
+        font-weight: bold;
+        color: #dc3545;
+        display: block;
+        margin-bottom: 0.1rem;
+        margin-left: 1rem;
+        margin-right: 0;
+    }
+
+    .case-subject {
+        color: #6c757d;
+        font-size: 0.9em;
+    }
+
+    .case-plaintiff,
+    .case-defendant {
+        color: #495057;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .status-control-container {
+        flex-shrink: 0;
+        margin-right: 1rem;
+        margin-left: 0;
+        min-width: 120px;
+        text-align: left;
+    }
+
+    .status-dropdown-toggle {
+        font-size: 0.8rem !important;
+        padding: 0.4em 0.8em !important;
+        min-width: 110px;
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4em;
+        border-width: 1px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .status-dropdown-toggle[data-current-status="in session"] {
+        background-color: #198754;
+        border-color: #157347;
+        color: white;
+    }
+
+    .status-dropdown-toggle[data-current-status="active"] {
+        background-color: #0dcaf0;
+        border-color: #0aa3c2;
+        color: white;
+    }
+
+    .status-dropdown-toggle[data-current-status="inactive"] {
+        background-color: #6c757d;
+        border-color: #5c636a;
+        color: white;
+    }
+
+    .status-dropdown-toggle[data-current-status="finished"] {
+        background-color: #adb5bd;
+        border-color: #9fa6ae;
+        color: #343a40;
+    }
+
+    .status-dropdown-toggle[data-current-status="postponed"] {
+        background-color: #ffc107;
+        border-color: #d9a406;
+        color: #343a40;
+    }
+
+    .status-dropdown-menu .dropdown-item {
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-align: right;
+    }
+
+    .status-dropdown-menu .dropdown-item.active {
+        font-weight: bold;
+        background-color: #e9ecef;
+        color: #495057;
+    }
+
+    .status-dropdown-menu .dropdown-item:not(.disabled):active {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .status-update-spinner {
+        width: 1rem;
+        height: 1rem;
+        border-width: 0.15em;
+        display: none;
+        margin-right: 5px;
+        margin-left: 0;
+    }
+
+    .status-updating .status-update-spinner {
+        display: inline-block;
+    }
+
+    .status-updating .status-text {
+        opacity: 0.5;
+    }
+
+    .status-updating .status-icon {
+        display: none;
+    }
+
+    #save-indicator {
+        display: none;
+        margin-top: 1.5rem;
+        font-weight: bold;
+        text-align: center;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+    }
+
+    #save-indicator.saving {
+        display: block;
+        color: #0d6efd;
+        background-color: #e7f1ff;
+    }
+
+    #save-indicator.success {
+        display: block;
+        color: #198754;
+        background-color: #d1e7dd;
+    }
+
+    #save-indicator.error {
+        display: block;
+        color: #dc3545;
+        background-color: #f8d7da;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-list-check ms-2"></i> التحكم بترتيب عرض القضايا</h2>
+        <a href="{{ url_for('display.general') }}" class="btn btn-outline-secondary" target="_blank"
+            title="عرض صفحة العرض العام">
+            <i class="bi bi-eye ms-1"></i> عرض الصفحة العامة
+        </a>
+    </div>
+    <p class="text-muted">
+        اسحب وأفلت القضايا أدناه باستخدام مقبض <i class="bi bi-grip-vertical"></i> لتغيير ترتيب ظهورها على شاشة العرض
+        العامة. يتم حفظ التغييرات تلقائيًا بعد إفلات العنصر.
+    </p>
+
+    <div id="sortable-cases">
+        {% for entry in display_entries %}
+        <div class="case-item" data-id="{{ entry.case_id }}" data-status="{{ entry.case.status.value }}">
+            <span class="drag-handle" title="اسحب للتغيير"><i class="bi bi-grip-vertical"></i></span>
+
+            <div class="case-details-grid">
+                <div class="case-number-subject" title="{{ entry.case.case_subject }}">
+                    <span class="case-number">{{ entry.case.case_number }}</span>
+                    <span class="case-subject">{{ entry.case.case_subject | default('(لا يوجد موضوع)', true) |
+                        truncate(50) }}</span>
+                </div>
+                <div class="case-plaintiff" title="{{ entry.case.plaintiff | default('غير متاح', true) }}">
+                    {{ entry.case.plaintiff | default('غير متاح', true) }}
+                </div>
+                <div class="case-defendant" title="{{ entry.case.defendant | default('غير متاح', true) }}">
+                    {{ entry.case.defendant | default('غير متاح', true) }}
+                </div>
+            </div>
+
+            <div class="status-control-container" id="status-control-{{ entry.case_id }}">
+                {% set current_status = entry.case.status.value %}
+                {# --- MODIFIED: Set status_text directly to Arabic --- #}
+                {% set status_text = 'غير معروف' %} {# Default Arabic text #}
+                {% if current_status == 'active' %}{% set status_text = 'الجلسة التالية' %}
+                {% elif current_status == 'inactive' %}{% set status_text = 'لم تبدأ بعد' %}
+                {% elif current_status == 'finished' %}{% set status_text = 'إنتهت' %}
+                {% elif current_status == 'postponed' %}{% set status_text = 'مؤجلة' %}
+                {% elif current_status == 'in session' %}{% set status_text = 'منعقدة الآن' %}
+                {% endif %}
+                {# --- Icon logic remains the same --- #}
+                {% set icon_class = 'bi-question-circle' %}
+                {% if current_status == 'in session' %}{% set icon_class = 'bi-play-circle-fill' %}
+                {% elif current_status == 'active' %}{% set icon_class = 'bi-hourglass-split' %}
+                {% elif current_status == 'inactive' %}{% set icon_class = 'bi-pause-circle' %}
+                {% elif current_status == 'finished' %}{% set icon_class = 'bi-check-circle-fill' %}
+                {% elif current_status == 'postponed' %}{% set icon_class = 'bi-calendar-x-fill' %}
+                {% endif %}
+
+                <div class="dropdown">
+                    <button class="btn btn-sm status-dropdown-toggle dropdown-toggle rounded-pill" type="button"
+                        id="statusDropdown-{{ entry.case_id }}" data-bs-toggle="dropdown" aria-expanded="false"
+                        data-current-status="{{ current_status }}" title="اضغط لتغيير الحالة">
+                        <i class="bi {{ icon_class }} status-icon"></i>
+                        <span class="status-text">{{ status_text }}</span> {# Display Arabic status #}
+                        <span class="spinner-border status-update-spinner" role="status" aria-hidden="true"></span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="statusDropdown-{{ entry.case_id }}">
+                        {% for status_option in status_options %}
+                        <li>
+                            <a class="dropdown-item status-change-option {% if status_option.value == current_status %}active disabled{% endif %}"
+                                href="#" data-case-id="{{ entry.case_id }}" data-new-status="{{ status_option.value }}">
+                                {# --- MODIFIED: Display Arabic text for options --- #}
+                                تغيير إلى:
+                                {% if status_option.value == 'active' %} الجلسة التالية
+                                {% elif status_option.value == 'inactive' %} لم تبدأ بعد
+                                {% elif status_option.value == 'finished' %} إنتهت
+                                {% elif status_option.value == 'postponed' %} مؤجلة
+                                {% elif status_option.value == 'in session' %} منعقدة الآن
+                                {% else %}{{ status_option.value|title }} {# Fallback #}
+                                {% endif %}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle me-1"></i> لا توجد قضايا محددة للعرض حاليًا.
+            <a href="{{ url_for('display.manage_display') }}">اذهب إلى إدارة العرض</a> لإضافة قضايا.
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="save-indicator">جارٍ الحفظ...</div>
+
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+
+{% if not 'Sortable.min.js' in ''.join(super()) %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const sortableList = document.getElementById('sortable-cases');
+        const saveIndicator = document.getElementById('save-indicator');
+
+        // --- SortableJS Initialization (No changes needed here) ---
+        if (sortableList) {
+            new Sortable(sortableList, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                handle: '.drag-handle',
+                forceFallback: true,
+                onEnd: function (evt) {
+                    const caseItems = sortableList.querySelectorAll('.case-item');
+                    const newOrderIds = Array.from(caseItems).map(item => item.getAttribute('data-id'));
+
+                    if (saveIndicator) {
+                        saveIndicator.textContent = 'جارٍ حفظ الترتيب...'; // RTL Text
+                        saveIndicator.className = 'saving';
+                        saveIndicator.style.display = 'block';
+                    }
+
+                    fetch("{{ url_for('display.update_display_order_ajax') }}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order: newOrderIds })
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.json().then(errData => { throw new Error(errData.message || `خطأ في الخادم: ${response.status}`); })
+                                    .catch(() => { throw new Error(`خطأ في الخادم: ${response.status}`); });
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                if (saveIndicator) {
+                                    saveIndicator.textContent = 'تم حفظ الترتيب!'; // RTL Text
+                                    saveIndicator.className = 'success';
+                                    setTimeout(() => {
+                                        saveIndicator.style.display = 'none';
+                                        saveIndicator.className = '';
+                                    }, 2000);
+                                }
+                            } else {
+                                throw new Error(data.message || 'فشل حفظ الترتيب.'); // RTL Error
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error saving order:', error);
+                            if (saveIndicator) {
+                                saveIndicator.textContent = `خطأ: ${error.message}`; // RTL Text
+                                saveIndicator.className = 'error';
+                            } else {
+                                alert(`خطأ في حفظ الترتيب: ${error.message}`); // RTL Alert
+                            }
+                        });
+                } // End onEnd
+            }); // End new Sortable
+        } else {
+            console.warn("Sortable list container '#sortable-cases' not found.");
+        } // End if (sortableList)
+
+
+        // --- Status Change Handling ---
+        const caseListContainer = document.getElementById('sortable-cases');
+
+        if (caseListContainer) {
+            caseListContainer.addEventListener('click', function (event) {
+                const targetLink = event.target.closest('.status-change-option');
+                if (targetLink && !targetLink.classList.contains('disabled')) {
+                    event.preventDefault();
+                    const caseId = targetLink.getAttribute('data-case-id');
+                    const newStatus = targetLink.getAttribute('data-new-status');
+                    const statusControlButton = targetLink.closest('.dropdown').querySelector('.status-dropdown-toggle');
+                    if (!caseId || !newStatus || !statusControlButton) {
+                        console.error("Missing data attributes or button for status change."); return;
+                    }
+                    updateCaseStatus(caseId, newStatus, statusControlButton);
+                }
+            });
+        } // End if (caseListContainer)
+
+        // Function to handle the AJAX call and UI update for status change
+        function updateCaseStatus(caseId, newStatus, buttonElement) {
+            const statusControlContainer = document.getElementById(`status-control-${caseId}`);
+            const caseItemElement = buttonElement.closest('.case-item');
+
+            buttonElement.classList.add('status-updating');
+            buttonElement.disabled = true;
+
+            const changeUrl = "{{ url_for('cases.change_status', case_id=0, status='placeholder') }}".replace('0', caseId).replace('placeholder', encodeURIComponent(newStatus));
+
+            fetch(changeUrl, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(response => {
+                    if (!response.ok && response.status !== 0) {
+                        return response.text().then(text => { throw new Error(text || `فشل تحديث الحالة: ${response.statusText} (${response.status})`); }); // RTL Error
+                    }
+                    return { success: true, newStatus: newStatus };
+                })
+                .then(data => {
+                    console.log(`Status updated successfully for case ${caseId} to ${data.newStatus}`);
+
+                    // --- Get Arabic text and correct icon ---
+                    const newStatusText = getStatusDisplayText(data.newStatus); // Uses updated helper
+                    const newIconClass = getStatusIconClass(data.newStatus);
+
+                    buttonElement.setAttribute('data-current-status', data.newStatus);
+                    buttonElement.querySelector('.status-text').textContent = newStatusText; // Set Arabic text
+                    buttonElement.querySelector('.status-icon').className = `bi ${newIconClass} status-icon`;
+
+                    if (caseItemElement) {
+                        caseItemElement.setAttribute('data-status', data.newStatus);
+                    }
+
+                    const dropdownMenu = buttonElement.nextElementSibling;
+                    if (dropdownMenu) {
+                        const dropdownItems = dropdownMenu.querySelectorAll('.status-change-option');
+                        dropdownItems.forEach(item => {
+                            if (item.getAttribute('data-new-status') === data.newStatus) {
+                                item.classList.add('active', 'disabled');
+                            } else {
+                                item.classList.remove('active', 'disabled');
+                            }
+                        });
+                    }
+
+                    // --- Visual feedback ---
+                    if (statusControlContainer) {
+                        statusControlContainer.style.transition = 'background-color 0.1s ease-in-out';
+                        statusControlContainer.style.backgroundColor = '#d1e7dd'; // Light green
+                        setTimeout(() => {
+                            statusControlContainer.style.backgroundColor = '';
+                        }, 500);
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error updating status for case ${caseId}:`, error);
+                    alert(`فشل تحديث الحالة: ${error.message}`); // RTL Alert
+                })
+                .finally(() => {
+                    buttonElement.classList.remove('status-updating');
+                    buttonElement.disabled = false;
+                });
+        } // End updateCaseStatus
+
+        // --- MODIFIED: Helper function returns Arabic display text ---
+        function getStatusDisplayText(statusValue) {
+            switch (statusValue) {
+                case 'active': return 'الجلسة التالية';
+                case 'inactive': return 'لم تبدأ بعد';
+                case 'finished': return 'إنتهت';
+                case 'postponed': return 'مؤجلة';
+                case 'in session': return 'منعقدة الآن';
+                default: return statusValue ? statusValue.charAt(0).toUpperCase() + statusValue.slice(1) : 'غير معروف'; // Fallback
+            }
+        }
+
+        // Helper function for icons (no changes needed)
+        function getStatusIconClass(statusValue) {
+            switch (statusValue) {
+                case 'in session': return 'bi-play-circle-fill';
+                case 'active': return 'bi-hourglass-split';
+                case 'inactive': return 'bi-pause-circle';
+                case 'finished': return 'bi-check-circle-fill';
+                case 'postponed': return 'bi-calendar-x-fill';
+                default: return 'bi-question-circle';
+            }
+        }
+
+    }); // End DOMContentLoaded
+</script>
+{% endblock %}

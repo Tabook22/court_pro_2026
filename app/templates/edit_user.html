@@ -1,0 +1,44 @@
+<!-- templates/edit_user.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2>تعديل المستخدم</h2>
+    <form method="POST">
+        <div class="mb-3">
+            <label class="form-label">اسم المستخدم</label>
+            <input type="text" name="username" class="form-control" value="{{ user.username }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">كلمة المرور</label>
+            <input type="password" name="password" class="form-control" placeholder="اترك الحقل فارغًا للاحتفاظ بكلمة المرور الحالية">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">الاسم</label>
+            <input type="text" name="name" class="form-control" value="{{ user.name }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">البريد الإلكتروني</label>
+            <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">الهاتف</label>
+            <input type="tel" name="tel" class="form-control" value="{{ user.tel }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="court_id" class="form-label">المحكمة <span class="text-danger">*</span></label>
+            <select class="form-select" id="court_id" name="court_id" required>
+                <option value="">اختر المحكمة (مطلوب)</option>
+                {% for court in courts if court.is_active %}
+                <option value="{{ court.id }}" {% if court.id == user.court_id %}selected{% endif %}>{{ court.name }}</option>
+                {% endfor %}
+            </select>
+            <div class="form-text">يجب تعيين محكمة لكل مستخدم لإدارة قضاياها</div>
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" name="is_admin" class="form-check-input" id="is_admin" {% if user.is_admin %}checked{% endif %}>
+            <label class="form-check-label" for="is_admin">مستخدم إداري</label>
+        </div>
+        <button type="submit" class="btn btn-primary">تحديث المستخدم</button>
+    </form>
+</div>
+{% endblock %}

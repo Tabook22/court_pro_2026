@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة مستخدم جديد{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person-plus-fill"></i> إضافة مستخدم جديد</h2>
+        <a href="{{ url_for('auth.list_users') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> العودة إلى قائمة المستخدمين
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">بيانات المستخدم الجديد</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="username" class="form-label">اسم المستخدم <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="username" name="username"
+                            value="{{ username or '' }}" required placeholder="أدخل اسم المستخدم">
+                        <div class="form-text">يجب أن يكون اسم المستخدم فريداً</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="password" class="form-label">كلمة المرور <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="password" name="password" required
+                            placeholder="أدخل كلمة مرور قوية">
+                        <div class="form-text">يُنصح باستخدام كلمة مرور قوية</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="name" class="form-label">الاسم الكامل <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ name or '' }}" required
+                            placeholder="أدخل الاسم الكامل">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">البريد الإلكتروني <span
+                                class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}"
+                            required placeholder="example@domain.com">
+                        <div class="form-text">يجب أن يكون البريد الإلكتروني فريداً</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="tel" class="form-label">رقم الهاتف</label>
+                        <input type="tel" class="form-control" id="tel" name="tel" value="{{ tel or '' }}"
+                            placeholder="أدخل رقم الهاتف">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="court_id" class="form-label">المحكمة</label>
+                        <select class="form-select" id="court_id" name="court_id">
+                            <option value="">اختر المحكمة (اختياري للمديرين)</option>
+                            {% for court in courts if court.is_active %}
+                            <option value="{{ court.id }}">{{ court.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">المحكمة مطلوبة للمستخدمين العاديين، اختيارية للمديرين</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin" {% if is_admin
+                            %}checked{% endif %}>
+                        <label class="form-check-label" for="is_admin">
+                            <strong>مدير النظام</strong>
+                        </label>
+                        <div class="form-text text-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            المديرون لديهم صلاحية كاملة على النظام
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> حفظ المستخدم
+                    </button>
+                    <a href="{{ url_for('auth.list_users') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> إلغاء
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if courts|length == 0 %}
+    <div class="alert alert-warning mt-3" role="alert">
+        <i class="bi bi-exclamation-triangle"></i>
+        <strong>تنبيه:</strong> لا توجد محاكم نشطة في النظام.
+        <a href="{{ url_for('main.add_court') }}" class="alert-link">أضف محكمة جديدة</a> قبل إضافة مستخدمين عاديين.
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const isAdminCheckbox = document.getElementById('is_admin');
+        const courtSelect = document.getElementById('court_id');
+
+        function toggleCourtRequirement() {
+            if (isAdminCheckbox.checked) {
+                courtSelect.removeAttribute('required');
+                courtSelect.parentElement.querySelector('.form-text').textContent = 'المحكمة اختيارية للمديرين';
+            } else {
+                courtSelect.setAttribute('required', 'required');
+                courtSelect.parentElement.querySelector('.form-text').textContent = 'المحكمة مطلوبة للمستخدمين العاديين';
+            }
+        }
+
+        isAdminCheckbox.addEventListener('change', toggleCourtRequirement);
+        toggleCourtRequirement(); // Initial call
+    });
+</script>
+{% endblock %}

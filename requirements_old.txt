@@ -1,0 +1,9 @@
+flask 
+flask-sqlalchemy 
+flask-login
+Werkzeug
+pandas 
+googletrans==4.0.0rc1
+numpy
+openpyxl
+Flask-Migrate

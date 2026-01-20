@@ -1,0 +1,38 @@
+
+.sidebar {
+    min-height: 100vh;
+    background: #343a40;
+}
+
+.sidebar .nav-link {
+    color: #ffffff !important;
+    padding: 1rem;
+}
+
+.sidebar .nav-link:hover {
+    background: #495057;
+    color: #ffffff !important;
+}
+
+.sidebar .card {
+    background-color: #343a40 !important;
+    color: #ffffff;
+}
+
+.sidebar .card-header {
+    background-color: #495057 !important;
+    color: #ffffff;
+}
+
+.sidebar .card label,
+.sidebar .card .form-text {
+    color: #ffffff !important;
+}
+
+.main-content {
+    padding: 20px;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
