@@ -254,12 +254,16 @@ def general():
     else:
         matching_fields = {field: field_translations.get(field, field.replace('_', ' ').title()) for field in visible_fields}
 
+    # URL for QR code: always point to this specific court so scanners get the same court
+    qr_target_url = url_for('display.general', court_id=court.id, _external=True)
+
     return render_template(
         'general.html',
         court=court,
         cases=cases_to_display,
         visible_fields=visible_fields,
-        matching_fields=matching_fields
+        matching_fields=matching_fields,
+        qr_target_url=qr_target_url
     )
 
 
