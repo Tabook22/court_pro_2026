@@ -345,10 +345,16 @@ def delete_selected_cases():
         return redirect(url_for('cases.list_cases'))
 
     deleted_count = 0
+    deleted_case_numbers = []
     try:
         query = Case.query.filter(Case.id.in_(case_ids_to_delete))
+        
+        # Apply permission filters
         if not current_user.is_admin:
-            query = query.filter(Case.user_id == current_user.id)
+            if not current_user.court_id:
+                flash('No court assigned to your account.', 'danger')
+                return redirect(url_for('cases.list_cases'))
+            query = query.filter(Case.court_id == current_user.court_id)
 
         cases_to_delete = query.all()
 
@@ -356,11 +362,21 @@ def delete_selected_cases():
             flash('No cases found or you do not have permission to delete them.', 'warning')
             return redirect(url_for('cases.list_cases'))
 
+        # Store case numbers for logging before deletion
         for case in cases_to_delete:
+            deleted_case_numbers.append(case.case_number)
             db.session.delete(case)
             deleted_count += 1
 
         db.session.commit()
+        
+        # Log activity for bulk deletion
+        log_activity(
+            action='Bulk Case Deletion',
+            details=f'Deleted {deleted_count} case(s): {", ".join(deleted_case_numbers[:5])}{"..." if len(deleted_case_numbers) > 5 else ""}',
+            court_id=current_user.court_id
+        )
+        
         flash(f'Successfully deleted {deleted_count} case(s).', 'success')
 
     except Exception as e:

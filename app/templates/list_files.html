@@ -206,14 +206,34 @@
                     .then(data => {
                         if (data.success && data.json_filename) {
                             const schema = data.schema || {};
+                            const extractedColumns = data.extracted_columns || Object.keys(schema.translated_headers || {});
+                            const columnCount = data.column_count || extractedColumns.length;
+                            const rowCount = data.row_count || schema.row_count || 0;
+                            
+                            // Build column list for display
+                            let columnsList = '';
+                            if (extractedColumns.length > 0) {
+                                columnsList = '\nالأعمدة المستخرجة:\n' + extractedColumns.map((col, idx) => {
+                                    const original = schema.translation_mapping && schema.translation_mapping[col] 
+                                        ? schema.translation_mapping[col].original || col 
+                                        : col;
+                                    const translated = schema.translated_headers && schema.translated_headers[original]
+                                        ? schema.translated_headers[original]
+                                        : col;
+                                    return `  ${idx + 1}. ${original} → ${translated}`;
+                                }).join('\n');
+                            }
+                            
                             const schemaInfo = `
                             تمت معالجة الملف بنجاح!
                             ملف JSON: ${data.json_filename}
-                            الأعمدة المكتشفة: ${Object.keys(schema.translated_headers || {}).length}
-                            عدد الصفوف: ${schema.row_count !== undefined ? schema.row_count : 'غير محدد'}
+                            عدد الأعمدة المستخرجة: ${columnCount}
+                            عدد الصفوف: ${rowCount}
+                            ${columnsList}
                         `;
                             showFeedback(schemaInfo, true);
                             console.log("المخطط المعالج:", schema);
+                            console.log("الأعمدة المستخرجة:", extractedColumns);
                             const shouldImport = confirm('اكتملت المعالجة. هل ترغب في استيراد هذه البيانات إلى قاعدة البيانات الآن؟');
                             if (shouldImport) {
                                 importToDatabase(data.json_filename, selectButton);

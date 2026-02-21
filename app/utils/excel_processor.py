@@ -21,17 +21,45 @@ class ExcelProcessor:
         # Create storage directory if it doesn't exist
         os.makedirs(json_storage_path, exist_ok=True)
 
-        # Predefined translations for known headers - ADD ANY OTHER HEADERS YOU EXPECT HERE
+        # Predefined translations for known headers - Comprehensive mapping for all Case model fields
         self.known_translations = {
-            "الرقم المقابل": "prosecution_number",
-            "تاريخ الجلسة المقبلة": "next_session_date",
-            "مستأنف ضده": "defendant",
-            "مستأنف": "plaintiff",
+            # Core fields
             "رقم الدعوى": "case_number",
             "م": "c_order",
-            # Add any other expected Arabic headers and their English snake_case equivalents
-            # Example: "موضوع الدعوى": "case_subject",
-            # Example: "نتيجة الجلسة": "session_result",
+            "تاريخ الدعوى": "case_date",
+            "تاريخ الإضافة": "added_date",
+            
+            # Session fields
+            "تاريخ الجلسة المقبلة": "next_session_date",
+            "تاريخ الجلسة القادمة": "next_session_date",
+            "نتيجة الجلسة": "session_result",
+            "رقم الجلسة": "num_sessions",
+            "عدد الجلسات": "num_sessions",
+            
+            # Case details
+            "موضوع الدعوى": "case_subject",
+            "موضوع": "case_subject",
+            
+            # Parties
+            "مستأنف ضده": "defendant",
+            "المستأنف ضده": "defendant",
+            "المدعى عليه": "defendant",
+            "مستأنف": "plaintiff",
+            "المستأنف": "plaintiff",
+            "المدعي": "plaintiff",
+            
+            # Prosecution/Police fields
+            "الرقم المقابل": "prosecution_number",
+            "مركز الشرطة": "police_department",
+            "رقم الشرطة": "police_case_number",
+            
+            # Status
+            "الحالة": "status",
+            "حالة": "status",
+            
+            # Common variations and aliases
+            "الترتيب": "c_order",
+            "ترتيب": "c_order",
         }
 
     # *** MODIFIED _translate_headers function ***
@@ -321,6 +349,15 @@ class ExcelProcessor:
             if not json_filename: # Check if saving failed
                  return {'success': False, 'error': 'Failed to save processed data to JSON.', 'message': 'Error saving JSON file.'}
 
+            # Log all extracted columns for debugging
+            print(f"Excel processing complete:")
+            print(f"  - Total columns extracted: {len(df.columns)}")
+            print(f"  - Columns: {list(df.columns)}")
+            print(f"  - Total rows: {len(df)}")
+            print(f"  - Translated headers mapping:")
+            for orig, trans in translated_headers.items():
+                print(f"    '{orig}' -> '{trans}'")
+            
             # Return success payload for the API
             return {
                 'success': True,
@@ -328,9 +365,10 @@ class ExcelProcessor:
                 # Avoid sending large data back in API response if not needed by client immediately
                 # 'data': data,
                 'json_filename': json_filename,
-                'message': f'File processed successfully. {len(df)} rows found. Saved to {json_filename}.',
+                'message': f'File processed successfully. {len(df)} rows and {len(df.columns)} columns extracted. Saved to {json_filename}.',
                 'row_count': len(df),
-                'column_count': len(df.columns)
+                'column_count': len(df.columns),
+                'extracted_columns': list(df.columns)  # Include column names in response
             }
 
         except pd.errors.EmptyDataError:

@@ -16,6 +16,8 @@ def create_app(config_name='default'):
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message_category = 'info'
 
     # Initialize SSE (Server Sent Events)
     sse_enabled = bool(app.config.get('REDIS_URL'))

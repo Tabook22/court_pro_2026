@@ -17,6 +17,12 @@
         text-align: center;
         vertical-align: middle;
     }
+    
+    /* Style for indeterminate state of select-all checkbox */
+    #select-all-checkbox:indeterminate {
+        background-color: #ffc107;
+        border-color: #ffc107;
+    }
 
     td {
         vertical-align: middle;
@@ -205,7 +211,7 @@
                                 <th class="checkbox-cell">
                                     <input class="form-check-input" type="checkbox" id="select-all-checkbox"
                                         title="تحديد/إلغاء تحديد الكل"
-                                        style="background-color:#f0f0f0; border:1px solid rgb(247, 180, 104)">
+                                        style="background-color:#0f0000; border:1px solid rgb(247, 180, 104)">
                                 </th>
                                 <th>رقم القضية</th>
                                 <th>الجلسة القادمة</th>
@@ -222,7 +228,7 @@
                                 <td class="checkbox-cell">
                                     <input class="form-check-input case-checkbox" type="checkbox"
                                         name="selected_case_ids" value="{{ case.id }}"
-                                        style="background-color:#f0f0f0; border:1px solid rgb(247, 180, 104)">
+                                        style="background-color:#000000; border:1px solid rgb(247, 180, 104)">
                                 </td>
                                 <td>{{ case.case_number }}</td>
                                 <td>{{ case.next_session_date if case.next_session_date else '-'}}</td>
@@ -379,23 +385,65 @@
 
         function updateDeleteButtonState() {
             const checkedCheckboxes = document.querySelectorAll('.case-checkbox:checked');
-            if (deleteSelectedBtn) { deleteSelectedBtn.disabled = checkedCheckboxes.length === 0; }
+            if (deleteSelectedBtn) { 
+                deleteSelectedBtn.disabled = checkedCheckboxes.length === 0; 
+            }
         }
 
+        function updateSelectAllState() {
+            if (!selectAllCheckbox) return;
+            const allCheckboxes = document.querySelectorAll('.case-checkbox');
+            const checkedCheckboxes = document.querySelectorAll('.case-checkbox:checked');
+            
+            if (allCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCheckboxes.length === allCheckboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true; // Show partial selection
+            }
+        }
+
+        // Select All functionality
         if (selectAllCheckbox) {
             selectAllCheckbox.addEventListener('change', function () {
-                caseCheckboxes.forEach(checkbox => { checkbox.checked = selectAllCheckbox.checked; });
+                const isChecked = this.checked;
+                const allCaseCheckboxes = document.querySelectorAll('.case-checkbox');
+                
+                allCaseCheckboxes.forEach(checkbox => { 
+                    checkbox.checked = isChecked; 
+                });
+                
                 updateDeleteButtonState();
             });
         }
 
-        caseCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                if (!checkbox.checked && selectAllCheckbox) { selectAllCheckbox.checked = false; }
-                else if (document.querySelectorAll('.case-checkbox:checked').length === caseCheckboxes.length && selectAllCheckbox) { selectAllCheckbox.checked = true; }
-                updateDeleteButtonState();
+        // Individual checkbox change handlers
+        if (caseCheckboxes.length > 0) {
+            caseCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    updateSelectAllState();
+                    updateDeleteButtonState();
+                });
             });
-        });
+        } else {
+            // If checkboxes are loaded dynamically, use event delegation
+            const tableBody = document.querySelector('#bulk-delete-form table tbody');
+            if (tableBody) {
+                tableBody.addEventListener('change', function(event) {
+                    if (event.target.classList.contains('case-checkbox')) {
+                        updateSelectAllState();
+                        updateDeleteButtonState();
+                    }
+                });
+            }
+        }
 
         if (bulkDeleteForm) {
             bulkDeleteForm.addEventListener('submit', function (event) {
@@ -457,6 +505,7 @@
 
         // Initial state check
         updateDeleteButtonState();
+        updateSelectAllState();
 
     }); // End DOMContentLoaded
 

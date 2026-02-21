@@ -10,27 +10,77 @@
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="name" class="form-label">اسم قاعةالمحكمة</label>
-                    <input type="text" class="form-control" id="name" name="name" value="{{ court.name }}" required>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">اسم قاعةالمحكمة</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ court.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">الوصف</label>
+                            <textarea class="form-control" id="description" name="description"
+                                rows="3">{{ court.description }}</textarea>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if
+                                court.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">نشط</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                        <a href="{{ url_for('main.list_courts') }}" class="btn btn-secondary">إلغاء</a>
+                    </form>
                 </div>
-                <div class="mb-3">
-                    <label for="description" class="form-label">الوصف</label>
-                    <textarea class="form-control" id="description" name="description"
-                        rows="3">{{ court.description }}</textarea>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-qr-code"></i> رمز QR للمحكمة</h5>
                 </div>
-                <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if
-                        court.is_active %}checked{% endif %}>
-                    <label class="form-check-label" for="is_active">نشط</label>
+                <div class="card-body text-center">
+                    <p class="text-muted">امسح هذا الرمز لعرض شاشة عرض المحكمة</p>
+                    <div class="mb-3">
+                        <img src="{{ url_for('main.court_qr_code', court_id=court.id) }}" 
+                             alt="QR Code for {{ court.name }}" 
+                             class="img-fluid border p-2 bg-white"
+                             style="max-width: 250px;">
+                    </div>
+                    <p class="small text-muted mb-2">
+                        <strong>المحكمة:</strong> {{ court.name }}
+                    </p>
+                    <a href="{{ url_for('display.general', court_id=court.id) }}" 
+                       target="_blank" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-box-arrow-up-right"></i> عرض الشاشة
+                    </a>
+                    <div class="mt-3">
+                        <button onclick="downloadQR()" class="btn btn-sm btn-success">
+                            <i class="bi bi-download"></i> تحميل QR
+                        </button>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
-                <a href="{{ url_for('main.list_courts') }}" class="btn btn-secondary">إلغاء</a>
-            </form>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    function downloadQR() {
+        const qrImage = document.querySelector('img[alt*="QR Code"]');
+        if (qrImage) {
+            const link = document.createElement('a');
+            link.href = qrImage.src;
+            link.download = 'court_{{ court.id }}_qr_code.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+</script>
 {% endblock %}

@@ -1,8 +1,9 @@
 import os
 import time
+import io
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
-from flask import render_template, redirect, url_for, flash, request, jsonify, send_from_directory, send_file, current_app
+from flask import render_template, redirect, url_for, flash, request, jsonify, send_from_directory, send_file, current_app, Response
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app.models.models import User, Case, CaseStatus, DisplayCase, DisplaySettings, ActivityLog, Court
@@ -10,6 +11,7 @@ from extensions import db
 from app.utils.excel_processor import ExcelProcessor
 from app.utils.json_importer import JsonToDatabase
 from . import main_bp
+import qrcode
 
 @main_bp.route('/')
 def index():
@@ -132,7 +134,8 @@ def list_files():
                     files = sorted([f for f in os.listdir(day_path) 
                                   if os.path.isfile(os.path.join(day_path, f)) and is_file_accessible(f)])
                     if files:
-                        temp_month_files[month].extend([os.path.join(day, file) for file in files])
+                        # Use forward slashes for URLs (normalize Windows backslashes)
+                        temp_month_files[month].extend([os.path.join(day, file).replace('\\', '/') for file in files])
                     else:
                         try:
                             os.rmdir(day_path)
@@ -214,26 +217,58 @@ def delete_file():
 @main_bp.route('/view_file/<year>/<month>/<path:file_rel_path>')
 @login_required
 def view_file(year, month, file_rel_path):
+    from urllib.parse import unquote
+    
+    # Decode URL-encoded path (handles %5C for backslashes, etc.)
+    file_rel_path = unquote(file_rel_path)
+    
     year = secure_filename(year)
     month = secure_filename(month)
+    
+    # Normalize path separators (handle both / and \)
     parts = file_rel_path.replace('\\', '/').split('/')
-    safe_parts = [secure_filename(part) for part in parts]
+    safe_parts = [secure_filename(part) for part in parts if part]  # Filter empty parts
     if any('..' in part or part.startswith('/') for part in safe_parts):
          return "Invalid path component", 400
 
-    directory = os.path.join(current_app.config['UPLOAD_FOLDER'], year, month, *safe_parts[:-1])
-    filename = safe_parts[-1]
+    # Reconstruct directory path
+    if len(safe_parts) > 1:
+        directory = os.path.join(current_app.config['UPLOAD_FOLDER'], year, month, *safe_parts[:-1])
+        filename = safe_parts[-1]
+    else:
+        # If no subdirectory, file is directly in month folder
+        directory = os.path.join(current_app.config['UPLOAD_FOLDER'], year, month)
+        filename = safe_parts[0] if safe_parts else file_rel_path
 
-    if not os.path.abspath(directory).startswith(os.path.abspath(current_app.config['UPLOAD_FOLDER'])):
+    # Security check: ensure directory is within UPLOAD_FOLDER
+    upload_folder_abs = os.path.abspath(current_app.config['UPLOAD_FOLDER'])
+    directory_abs = os.path.abspath(directory)
+    if not directory_abs.startswith(upload_folder_abs):
          return "Access denied", 403
 
+    file_path = os.path.join(directory, filename)
+    
+    if not os.path.exists(file_path) or not os.path.isfile(file_path):
+        return "File not found", 404
+
+    # Check file access permissions (non-admin users can only access their court's files)
+    if not current_user.is_admin:
+        court_prefix = f"court_{current_user.court_id}_"
+        if not filename.startswith(court_prefix):
+            return "Access denied", 403
+
     try:
-        return send_from_directory(directory, filename, as_attachment=False)
+        # For Excel files, serve as attachment (download) since browsers can't display them
+        if filename.lower().endswith(('.xls', '.xlsx')):
+            return send_file(file_path, as_attachment=True, download_name=filename)
+        else:
+            # For other files, try to display in browser
+            return send_from_directory(directory, filename, as_attachment=False)
     except FileNotFoundError:
         return "File not found", 404
     except Exception as e:
-         print(f"Error serving file {directory}/{filename}: {e}")
-         return "Error serving file", 500
+         print(f"Error serving file {file_path}: {e}")
+         return f"Error serving file: {str(e)}", 500
 
 @main_bp.route('/process_excel', methods=['POST'])
 @login_required
@@ -269,7 +304,10 @@ def process_excel():
             'success': True,
             'message': result.get('message', 'File processed successfully.'),
             'schema': result.get('schema'),
-            'json_filename': result.get('json_filename')
+            'json_filename': result.get('json_filename'),
+            'row_count': result.get('row_count', 0),
+            'column_count': result.get('column_count', 0),
+            'extracted_columns': result.get('extracted_columns', [])
         })
     else:
         return jsonify({
@@ -403,6 +441,36 @@ def edit_court(court_id):
         return redirect(url_for('main.list_courts'))
 
     return render_template('edit_court.html', court=court)
+
+@main_bp.route('/court_qr_code/<int:court_id>')
+def court_qr_code(court_id):
+    """Generate QR code for a specific court's display screen - Public access for QR code image"""
+    court = Court.query.get_or_404(court_id)
+    
+    # Generate the URL for the court's display screen
+    # Use request.host_url to get the base URL dynamically
+    base_url = request.host_url.rstrip('/')
+    display_url = f"{base_url}{url_for('display.general', court_id=court_id)}"
+    
+    # Create QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(display_url)
+    qr.make(fit=True)
+    
+    # Create image
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Save to bytes
+    img_io = io.BytesIO()
+    img.save(img_io, 'PNG')
+    img_io.seek(0)
+    
+    return Response(img_io.getvalue(), mimetype='image/png')
 
 @main_bp.route('/view_court_details/<int:court_id>')
 @login_required
